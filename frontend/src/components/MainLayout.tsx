@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Title,
   Flex,
@@ -9,12 +9,13 @@ import {
   Text,
   UnstyledButton,
   Tooltip,
+  Alert,
   Modal,
   Stack,
-  Group,
-  Button,
   Code,
-  Alert,
+  Button,
+  Paper,
+  ScrollArea,
 } from '@mantine/core';
 import {
   IconBrandGithub,
@@ -22,11 +23,12 @@ import {
   IconLogout,
   IconUser,
   IconAlertCircle,
-  IconKey,
-  IconDeviceDesktop,
+  IconCopy,
+  IconBug,
 } from '@tabler/icons-react';
 import { TimeRange, LanguageFilter } from '../types';
 import { useAuth } from '../hooks/useAuth';
+import { GetLogs } from '../../wailsjs/go/backend/App';
 
 type ViewScope = 'all' | 'mine';
 
@@ -74,14 +76,14 @@ export function MainLayout({
 }: MainLayoutProps) {
   const [viewScope, setViewScope] = useState<ViewScope>('all');
   const [loginError, setLoginError] = useState<string | null>(null);
-  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const [deviceCodeModalOpen, setDeviceCodeModalOpen] = useState(false);
+  const [logsModalOpen, setLogsModalOpen] = useState(false);
+  const [logs, setLogs] = useState<string>('');
   const {
     isLoggedIn,
     user,
     isLoading: authLoading,
-    deviceFlowInfo,
-    setDeviceFlowInfo,
-    loginWithOAuth,
+    deviceCode,
     loginWithDeviceFlow,
     logout,
   } = useAuth();
@@ -93,27 +95,26 @@ export function MainLayout({
     }
   };
 
-  const handleLoginOAuth = async () => {
-    try {
-      setLoginError(null);
-      setLoginModalOpen(false);
-      await loginWithOAuth();
-    } catch (error) {
-      const errorMsg = error instanceof Error ? error.message : String(error);
-      console.error('OAuth 登录失败:', errorMsg);
-      setLoginError(errorMsg);
-      setLoginModalOpen(true);
-    }
-  };
-
   const handleLoginDeviceFlow = async () => {
     try {
       setLoginError(null);
       await loginWithDeviceFlow();
+      setDeviceCodeModalOpen(true);
     } catch (error) {
       const errorMsg = error instanceof Error ? error.message : String(error);
       console.error('Device Flow 登录失败:', errorMsg);
       setLoginError(errorMsg);
+      setTimeout(() => setLoginError(null), 5000);
+    }
+  };
+
+  const handleCopyUserCode = async () => {
+    if (deviceCode) {
+      try {
+        await navigator.clipboard.writeText(deviceCode);
+      } catch (err) {
+        console.error('复制失败:', err);
+      }
     }
   };
 
@@ -122,6 +123,16 @@ export function MainLayout({
       await logout();
     } catch (error) {
       console.error('登出失败:', error);
+    }
+  };
+
+  const handleOpenLogs = async () => {
+    try {
+      const logContent = await GetLogs();
+      setLogs(logContent);
+      setLogsModalOpen(true);
+    } catch (error) {
+      console.error('获取日志失败:', error);
     }
   };
 
@@ -190,6 +201,27 @@ export function MainLayout({
               }}
             />
 
+            {/* 日志按钮 */}
+            <Tooltip label="查看日志" position="bottom-end" withArrow>
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                radius="sm"
+                onClick={handleOpenLogs}
+                styles={{
+                  root: {
+                    backgroundColor: '#3f4b5c',
+                    color: '#a0a0a0',
+                    '&:hover': {
+                      backgroundColor: '#4a576a',
+                    },
+                  },
+                }}
+              >
+                <IconBug size={18} />
+              </ActionIcon>
+            </Tooltip>
+
             {/* 用户登录/头像 */}
             {isLoggedIn && user ? (
               <Menu shadow="md" width={200} position="bottom-end">
@@ -235,8 +267,8 @@ export function MainLayout({
                   variant="subtle"
                   size="md"
                   radius="sm"
-                  onClick={() => setLoginModalOpen(true)}
-                  loading={authLoading}
+                  onClick={handleLoginDeviceFlow}
+                  disabled={authLoading}
                   styles={{
                     root: {
                       backgroundColor: '#3f4b5c',
@@ -255,124 +287,6 @@ export function MainLayout({
         </div>
       </header>
 
-      {/* 登录方式选择模态框 */}
-      <Modal
-        opened={loginModalOpen}
-        onClose={() => {
-          setLoginModalOpen(false);
-          setLoginError(null);
-          setDeviceFlowInfo(null);
-        }}
-        title={<Text size="lg" weight={500}>选择登录方式</Text>}
-        centered
-        overlayProps={{ backgroundOpacity: 0.5 }}
-      >
-        <Stack gap="md">
-          {loginError && (
-            <Alert color="red" icon={<IconAlertCircle size={16} />} withClose onClose={() => setLoginError(null)}>
-              {loginError}
-            </Alert>
-          )}
-
-          {deviceFlowInfo ? (
-            // Device Flow 验证码显示
-            <Stack gap="lg" align="center">
-              <Text size="sm" c="dimmed">请在浏览器中输入以下验证码：</Text>
-
-              <Code
-                style={{
-                  fontSize: '32px',
-                  letterSpacing: '8px',
-                  fontWeight: 'bold',
-                  padding: '16px 32px',
-                  backgroundColor: '#2d333b',
-                }}
-              >
-                {deviceFlowInfo.user_code}
-              </Code>
-
-              <Text size="sm" c="dimmed">验证页面已在浏览器中打开</Text>
-
-              <Group gap="xs">
-                <Text size="xs" c="dimmed">未打开？</Text>
-                <Button
-                  size="xs"
-                  variant="subtle"
-                  leftSection={<IconBrandGithub size={14} />}
-                  onClick={() => window.open('https://github.com/login/device', '_blank')}
-                >
-                  打开验证页面
-                </Button>
-              </Group>
-
-              <Button
-                fullWidth
-                variant="light"
-                color="gray"
-                onClick={() => {
-                  setDeviceFlowInfo(null);
-                }}
-              >
-                返回选择其他方式
-              </Button>
-            </Stack>
-          ) : (
-            // 登录方式选择
-            <Stack gap="sm">
-              <Button
-                size="lg"
-                leftSection={<IconDeviceDesktop size={20} />}
-                onClick={handleLoginDeviceFlow}
-                styles={{
-                  root: {
-                    backgroundColor: '#238636',
-                    height: '60px',
-                    '&:hover': {
-                      backgroundColor: '#2ea043',
-                    },
-                  },
-                  label: {
-                    fontSize: '16px',
-                    fontWeight: 500,
-                  },
-                }}
-              >
-                <Stack gap={4}>
-                  <Text>方式 1：设备码登录（推荐）</Text>
-                  <Text size="xs" c="rgba(255,255,255,0.7)">无需 Client Secret，只需输入验证码</Text>
-                </Stack>
-              </Button>
-
-              <Button
-                size="lg"
-                variant="light"
-                leftSection={<IconKey size={20} />}
-                onClick={handleLoginOAuth}
-                styles={{
-                  root: {
-                    height: '60px',
-                    border: '1px solid #4a576a',
-                    color: '#a0a0a0',
-                    '&:hover': {
-                      backgroundColor: '#3f4b5c',
-                    },
-                  },
-                  label: {
-                    fontSize: '16px',
-                    fontWeight: 500,
-                  },
-                }}
-              >
-                <Stack gap={4}>
-                  <Text>方式 2：OAuth 授权登录</Text>
-                  <Text size="xs" c="dimmed">需要配置 Client Secret</Text>
-                </Stack>
-              </Button>
-            </Stack>
-          )}
-        </Stack>
-      </Modal>
-
       <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '18px' }}>
           <div style={{ flex: 6 }}>
@@ -383,6 +297,91 @@ export function MainLayout({
           </div>
         </div>
       </main>
+
+      {/* 登录错误提示 */}
+      {loginError && (
+        <Alert
+          icon={<IconAlertCircle size={16} />}
+          title="登录失败"
+          color="red"
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            right: 20,
+            maxWidth: 400,
+            zIndex: 2000,
+          }}
+          withClose
+          onClose={() => setLoginError(null)}
+        >
+          {loginError}
+        </Alert>
+      )}
+
+      {/* 用户码显示弹窗 */}
+      <Modal
+        opened={deviceCodeModalOpen}
+        onClose={() => setDeviceCodeModalOpen(false)}
+        title="输入验证码"
+        centered
+      >
+        <Stack>
+          <Text size="sm">
+            浏览器已打开 GitHub 授权页面。请在页面上输入以下验证码：
+          </Text>
+          <Code
+            style={{
+              fontSize: 24,
+              textAlign: 'center',
+              letterSpacing: 4,
+              padding: 16,
+            }}
+          >
+            {deviceCode}
+          </Code>
+          <Text size="xs" c="dimmed">
+            验证码已复制到剪贴板，也可以点击按钮重新复制
+          </Text>
+          <Button
+            leftSection={<IconCopy size={16} />}
+            onClick={handleCopyUserCode}
+            variant="light"
+          >
+            复制验证码
+          </Button>
+        </Stack>
+      </Modal>
+
+      {/* 日志查看窗口 */}
+      <Modal
+        opened={logsModalOpen}
+        onClose={() => setLogsModalOpen(false)}
+        title="应用日志"
+        size="lg"
+        centered
+      >
+        <Paper
+          style={{
+            backgroundColor: '#1a1a1a',
+            padding: 16,
+            maxHeight: 400,
+          }}
+        >
+          <ScrollArea h={350}>
+            <Code
+              style={{
+                display: 'block',
+                whiteSpace: 'pre-wrap',
+                wordBreak: 'break-all',
+                fontSize: 12,
+                fontFamily: 'monospace',
+              }}
+            >
+              {logs || '暂无日志'}
+            </Code>
+          </ScrollArea>
+        </Paper>
+      </Modal>
     </div>
   );
 }

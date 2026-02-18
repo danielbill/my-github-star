@@ -1,57 +1,36 @@
 import { useState, useEffect, useCallback } from 'react';
 import { EventsOn, EventsOff } from '../../wailsjs/runtime/runtime';
 import {
-  GetCurrentUser,
-  IsLoggedIn,
   StartLogin,
   Logout,
   OpenURL,
   StartDeviceFlowLogin,
-  OpenVerificationURL,
 } from '../../wailsjs/go/backend/App';
 import { GitHubUser, DeviceFlowInfo } from '../types';
+import { ClipboardSetText } from '../../wailsjs/runtime/runtime';
 
 export function useAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<GitHubUser | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [deviceFlowInfo, setDeviceFlowInfo] = useState<DeviceFlowInfo | null>(null);
-
-  // 初始化：检查登录状态
-  useEffect(() => {
-    const checkAuthStatus = async () => {
-      try {
-        const loggedIn = await IsLoggedIn();
-        setIsLoggedIn(loggedIn);
-
-        if (loggedIn) {
-          const currentUser = await GetCurrentUser();
-          if (currentUser) {
-            setUser(currentUser as GitHubUser);
-          }
-        }
-      } catch (error) {
-        console.error('检查登录状态失败:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    checkAuthStatus();
-  }, []);
+  // Per requirement: do not trigger any auth/status calls on app startup.
+  const [isLoading, setIsLoading] = useState(false);
+  const [deviceCode, setDeviceCode] = useState<string | null>(null);
 
   // 监听登录成功事件
   useEffect(() => {
     const handleLoginSuccess = (userData: any) => {
+      console.log('[useAuth] 收到 login-success 事件:', userData);
       setIsLoggedIn(true);
       setUser(userData as GitHubUser);
       setIsLoading(false);
-      setDeviceFlowInfo(null); // 清除 Device Flow 信息
+      setDeviceCode(null); // 登录成功后关闭验证码弹窗
     };
 
+    console.log('[useAuth] 注册 login-success 事件监听器');
     EventsOn('login-success', handleLoginSuccess);
 
     return () => {
+      console.log('[useAuth] 注销 login-success 事件监听器');
       EventsOff('login-success');
     };
   }, []);
@@ -61,7 +40,6 @@ export function useAuth() {
     const handleLogoutSuccess = () => {
       setIsLoggedIn(false);
       setUser(null);
-      setDeviceFlowInfo(null);
     };
 
     EventsOn('logout-success', handleLogoutSuccess);
@@ -90,14 +68,28 @@ export function useAuth() {
   const loginWithDeviceFlow = useCallback(async () => {
     try {
       setIsLoading(true);
-      const info = await StartDeviceFlowLogin();
-      setDeviceFlowInfo(info as DeviceFlowInfo);
+      const info = (await StartDeviceFlowLogin()) as DeviceFlowInfo;
+
+      // 显示用户码
+      setDeviceCode(info.user_code);
+
+      // 复制到剪贴板
+      try {
+        await ClipboardSetText(info.user_code);
+      } catch {
+        // clipboard is best-effort; do not block login flow
+      }
+
+      // 打开验证页面
+      const complete = (info as any).verification_uri_complete as string | undefined;
+      const urlToOpen = complete && complete.trim() ? complete : info.verification_uri;
+      await OpenURL(urlToOpen);
+
       setIsLoading(false);
-      // 自动打开验证页面
-      await OpenVerificationURL();
     } catch (error) {
       console.error('Device Flow 登录失败:', error);
       setIsLoading(false);
+      setDeviceCode(null);
       throw error;
     }
   }, []);
@@ -116,8 +108,7 @@ export function useAuth() {
     isLoggedIn,
     user,
     isLoading,
-    deviceFlowInfo,
-    setDeviceFlowInfo,
+    deviceCode,
     loginWithOAuth,
     loginWithDeviceFlow,
     logout,

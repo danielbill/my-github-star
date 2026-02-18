@@ -5,28 +5,31 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-"log"
 	"net/http"
 	"time"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github-star-app/backend/config"
+	"github-star-app/backend/logger"
 	"github-star-app/backend/models"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 const (
 	// GitHub Device Flow 端点
 	deviceCodeURL = "https://github.com/login/device/code"
-	tokenURL       = "https://github.com/login/oauth/access_token"
+	tokenURL      = "https://github.com/login/oauth/access_token"
+	// my-github-stars OAuth App Client ID
+	defaultClientID = "Ov23liRTX5eK2scwvG20"
 )
 
 // DeviceCodeResponse GitHub Device Code 响应
 type DeviceCodeResponse struct {
-	DeviceCode      string `json:"device_code"`
-	UserCode       string `json:"user_code"`
-	VerificationURI string `json:"verification_uri"`
-	ExpiresIn       int    `json:"expires_in"`
-	Interval        int    `json:"interval"`
+	DeviceCode              string `json:"device_code"`
+	UserCode                string `json:"user_code"`
+	VerificationURI         string `json:"verification_uri"`
+	VerificationURIComplete string `json:"verification_uri_complete"`
+	ExpiresIn               int    `json:"expires_in"`
+	Interval                int    `json:"interval"`
 }
 
 // DeviceFlowService GitHub Device Flow 认证服务
@@ -38,6 +41,8 @@ type DeviceFlowService struct {
 
 // NewDeviceFlowService 创建 Device Flow 服务
 func NewDeviceFlowService(cfg *config.Config) *DeviceFlowService {
+	logger.Init()
+	logger.Info("[DeviceFlow] 服务创建")
 	return &DeviceFlowService{
 		config:      cfg,
 		pollingDone: make(chan struct{}),
@@ -52,13 +57,17 @@ func (s *DeviceFlowService) SetContext(ctx context.Context) {
 // StartLogin 开始 Device Flow 登录
 func (s *DeviceFlowService) StartLogin() (*DeviceCodeResponse, error) {
 	clientID := s.config.GetGitHubClientID()
+	// 如果配置文件没有 Client ID，使用内置的默认值
 	if clientID == "" {
-		return nil, fmt.Errorf("GitHub Client ID 未配置，请在 shared/app-config.toml 中设置")
+		clientID = defaultClientID
 	}
+
+	logger.Info("[DeviceFlow] 开始登录，Client ID: %s", clientID)
 
 	// 请求 Device Code
 	req, err := http.NewRequest("POST", deviceCodeURL, nil)
 	if err != nil {
+		logger.Error("[DeviceFlow] 创建请求失败: %v", err)
 		return nil, fmt.Errorf("创建请求失败: %w", err)
 	}
 
@@ -72,23 +81,28 @@ func (s *DeviceFlowService) StartLogin() (*DeviceCodeResponse, error) {
 	client := &http.Client{Timeout: 10 * time.Second}
 	resp, err := client.Do(req)
 	if err != nil {
+		logger.Error("[DeviceFlow] 请求 Device Code 失败: %v", err)
 		return nil, fmt.Errorf("请求 Device Code 失败: %w", err)
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != http.StatusOK {
 		body, _ := io.ReadAll(resp.Body)
+		logger.Error("[DeviceFlow] GitHub API 返回错误 %d: %s", resp.StatusCode, string(body))
 		return nil, fmt.Errorf("GitHub API 返回错误: %d, %s", resp.StatusCode, string(body))
 	}
 
 	var result DeviceCodeResponse
 	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
+		logger.Error("[DeviceFlow] 解析响应失败: %v", err)
 		return nil, fmt.Errorf("解析响应失败: %w", err)
 	}
 
-	log.Printf("[DeviceFlow] Device code 获取成功, UserCode: %s", result.UserCode)
+	logger.Info("[DeviceFlow] Device code 获取成功, UserCode: %s, ExpiresIn: %d, Interval: %d",
+		result.UserCode, result.ExpiresIn, result.Interval)
 
 	// 启动轮询
+	logger.Info("[DeviceFlow] 启动轮询获取 token...")
 	go s.pollForToken(result.DeviceCode, result.Interval, result.ExpiresIn)
 
 	return &result, nil
@@ -96,37 +110,45 @@ func (s *DeviceFlowService) StartLogin() (*DeviceCodeResponse, error) {
 
 // pollForToken 轮询获取 Token
 func (s *DeviceFlowService) pollForToken(deviceCode string, interval, expiresIn int) {
-	ticker := time.NewTicker(time.Duration(interval) * time.Second)
-	defer ticker.Stop()
+	logger.Info("[DeviceFlow] 轮询开始，deviceCode: %s..., interval: %d秒, expiresIn: %d秒",
+		deviceCode[:8], interval, expiresIn)
 
-	timeout := time.After(time.Duration(expiresIn) * time.Second)
+	currentInterval := interval
 	client := &http.Client{Timeout: 10 * time.Second}
+	pollCount := 0
+	startTime := time.Now()
 
 	for {
-		select {
-		case <-timeout:
-			log.Printf("[DeviceFlow] 轮询超时")
+		// 检查是否超时
+		if time.Since(startTime) > time.Duration(expiresIn)*time.Second {
+			logger.Warn("[DeviceFlow] 轮询超时（%d秒后），放弃", expiresIn)
 			return
-		case <-s.pollingDone:
-			log.Printf("[DeviceFlow] 轮询被取消")
-			return
-		case <-ticker.C:
-			token, err := s.exchangeToken(client, deviceCode)
-			if err != nil {
-				// 继续轮询
-				continue
-			}
+		}
 
-			// 获取到 token，获取用户信息
+		// 检查是否被取消
+		select {
+		case <-s.pollingDone:
+			logger.Info("[DeviceFlow] 轮询被取消")
+			return
+		default:
+		}
+
+		pollCount++
+		logger.Debug("[DeviceFlow] 第 %d 次轮询，间隔 %d 秒...", pollCount, currentInterval)
+
+		token, err := s.exchangeToken(client, deviceCode)
+		if err == nil {
+			// 成功获取 token
+			// 获取用户信息
 			user, err := s.fetchUserInfo(token.AccessToken)
 			if err != nil {
-				log.Printf("[DeviceFlow] 获取用户信息失败: %v", err)
+				logger.Error("[DeviceFlow] 获取用户信息失败: %v", err)
 				return
 			}
 
-			log.Printf("[DeviceFlow] 登录成功: %s (%s)", user.Login, user.Name)
+			logger.Info("[DeviceFlow] 登录成功: %s (%s)", user.Login, user.Name)
 
-			// 保存到配置
+			// 保存到配置文件
 			if err := s.config.SetAuth(
 				token.AccessToken,
 				user.ID,
@@ -134,29 +156,53 @@ func (s *DeviceFlowService) pollForToken(deviceCode string, interval, expiresIn 
 				user.Name,
 				user.AvatarURL,
 			); err != nil {
-				log.Printf("[DeviceFlow] 保存认证信息失败: %v", err)
-				return
+				logger.Error("[DeviceFlow] 保存认证信息失败: %v", err)
+			} else {
+				logger.Info("[DeviceFlow] 认证信息已保存到配置文件")
 			}
 
 			// 通知前端
 			if s.ctx != nil {
+				logger.Info("[DeviceFlow] 发送 login-success 事件到前端")
 				runtime.EventsEmit(s.ctx, "login-success", map[string]interface{}{
-					"id":          user.ID,
-					"login":       user.Login,
-					"name":        user.Name,
-					"email":       user.Email,
-					"avatar_url":  user.AvatarURL,
-					"bio":         user.Bio,
-					"location":    user.Location,
-					"blog":        user.Blog,
-					"company":     user.Company,
+					"id":           user.ID,
+					"login":        user.Login,
+					"name":         user.Name,
+					"email":        user.Email,
+					"avatar_url":   user.AvatarURL,
+					"bio":          user.Bio,
+					"location":     user.Location,
+					"blog":         user.Blog,
+					"company":      user.Company,
 					"public_repos": user.PublicRepos,
-					"followers":   user.Followers,
-					"following":   user.Following,
+					"followers":    user.Followers,
+					"following":    user.Following,
 				})
+			} else {
+				logger.Warn("[DeviceFlow] 警告: ctx 为 nil，无法发送事件")
 			}
 
 			return
+		}
+
+		// 处理错误
+		errMsg := err.Error()
+		if errMsg == "pending" {
+			logger.Debug("[DeviceFlow] 第 %d 次轮询: 等待用户授权...", pollCount)
+		} else if errMsg == "slow_down" {
+			currentInterval += 5
+			logger.Info("[DeviceFlow] GitHub 要求降速，轮询间隔增加到 %d 秒", currentInterval)
+		} else {
+			logger.Warn("[DeviceFlow] 第 %d 次轮询失败: %v", pollCount, err)
+		}
+
+		// 等待下一次轮询
+		select {
+		case <-s.pollingDone:
+			logger.Info("[DeviceFlow] 轮询被取消")
+			return
+		case <-time.After(time.Duration(currentInterval) * time.Second):
+			// 继续下一次轮询
 		}
 	}
 }
@@ -164,6 +210,10 @@ func (s *DeviceFlowService) pollForToken(deviceCode string, interval, expiresIn 
 // exchangeToken 用 Device Code 换取 Token
 func (s *DeviceFlowService) exchangeToken(client *http.Client, deviceCode string) (*TokenResponse, error) {
 	clientID := s.config.GetGitHubClientID()
+	// 如果配置文件没有 Client ID，使用内置的默认值
+	if clientID == "" {
+		clientID = defaultClientID
+	}
 
 	req, err := http.NewRequest("POST", tokenURL, nil)
 	if err != nil {
@@ -185,15 +235,15 @@ func (s *DeviceFlowService) exchangeToken(client *http.Client, deviceCode string
 	defer resp.Body.Close()
 
 	body, _ := io.ReadAll(resp.Body)
+	// GitHub 设备码换 token：即使 HTTP 200，也可能返回 {"error":"authorization_pending"} 之类的 JSON。
+	// 所以不能只看 status code，必须解析 body。
+	var errResp struct {
+		Error            string `json:"error"`
+		ErrorDescription string `json:"error_description"`
+	}
+	_ = json.Unmarshal(body, &errResp)
 
-	if resp.StatusCode != http.StatusOK {
-		// 处理 GitHub 返回的错误
-		var errResp struct {
-			Error            string `json:"error"`
-			ErrorDescription string `json:"error_description"`
-		}
-		json.Unmarshal(body, &errResp)
-
+	if errResp.Error != "" {
 		// 授权未完成或等待中，继续轮询
 		if errResp.Error == "authorization_pending" {
 			return nil, fmt.Errorf("pending")
@@ -201,15 +251,20 @@ func (s *DeviceFlowService) exchangeToken(client *http.Client, deviceCode string
 		if errResp.Error == "slow_down" {
 			return nil, fmt.Errorf("slow_down")
 		}
-
 		return nil, fmt.Errorf("token exchange failed: %s", errResp.Error)
+	}
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("token exchange http error: %d", resp.StatusCode)
 	}
 
 	var token TokenResponse
 	if err := json.Unmarshal(body, &token); err != nil {
 		return nil, err
 	}
-
+	if token.AccessToken == "" {
+		return nil, fmt.Errorf("token exchange returned empty token")
+	}
 	return &token, nil
 }
 
@@ -286,8 +341,9 @@ func (s *DeviceFlowService) IsLoggedIn() bool {
 func (s *DeviceFlowService) Logout() error {
 	s.Cancel() // 取消可能正在进行的轮询
 
+	// 清除配置
 	if err := s.config.ClearAuth(); err != nil {
-		return fmt.Errorf("清除认证信息失败: %w", err)
+		logger.Error("[DeviceFlow] 清除认证信息失败: %v", err)
 	}
 
 	// 通知前端
@@ -295,6 +351,6 @@ func (s *DeviceFlowService) Logout() error {
 		runtime.EventsEmit(s.ctx, "logout-success", nil)
 	}
 
-	log.Printf("[DeviceFlow] User logged out")
+	logger.Info("[DeviceFlow] User logged out")
 	return nil
 }

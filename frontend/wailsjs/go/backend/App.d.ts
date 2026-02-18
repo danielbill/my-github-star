@@ -10,6 +10,8 @@ export function GetCurrentUser():Promise<models.User>;
 
 export function GetLoginMethod():Promise<string>;
 
+export function GetLogs():Promise<string>;
+
 export function GetRepositoryByID(arg1:string,arg2:string):Promise<models.Repository>;
 
 export function GetStarredRepositories():Promise<Array<models.Repository>>;

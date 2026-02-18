@@ -44,6 +44,7 @@ export interface AuthState {
 export interface DeviceFlowInfo {
   user_code: string;
   verification_uri: string;
+  verification_uri_complete?: string;
   expires_in: number;
   interval: number;
 }

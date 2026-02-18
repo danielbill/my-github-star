@@ -3,6 +3,7 @@ export namespace backend {
 	export class DeviceFlowInfo {
 	    user_code: string;
 	    verification_uri: string;
+	    verification_uri_complete: string;
 	    expires_in: number;
 	    interval: number;
 	
@@ -14,6 +15,7 @@ export namespace backend {
 	        if ('string' === typeof source) source = JSON.parse(source);
 	        this.user_code = source["user_code"];
 	        this.verification_uri = source["verification_uri"];
+	        this.verification_uri_complete = source["verification_uri_complete"];
 	        this.expires_in = source["expires_in"];
 	        this.interval = source["interval"];
 	    }

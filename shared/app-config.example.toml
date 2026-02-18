@@ -1,0 +1,19 @@
+# GitHub OAuth 配置
+# my-github-stars OAuth App
+# Device Flow 不需要 Client Secret
+
+[github]
+client_id = "YOUR_GITHUB_CLIENT_ID"
+client_secret = ""
+
+[auth]
+# 登录后自动填充，无需手动填写
+access_token = ""
+user_id = 0
+login = ""
+name = ""
+avatar_url = ""
+
+[preferences]
+# 登录方式: "device" (设备码登录，推荐)
+login_method = "device"

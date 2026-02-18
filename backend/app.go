@@ -7,12 +7,13 @@ import (
 	"path/filepath"
 	"sync"
 
-	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github-star-app/backend/auth"
 	"github-star-app/backend/config"
 	"github-star-app/backend/github"
+	"github-star-app/backend/logger"
 	"github-star-app/backend/models"
 	"github-star-app/backend/storage"
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
 // App 应用结构
@@ -30,6 +31,9 @@ type App struct {
 
 // NewApp 创建新的应用实例
 func NewApp() *App {
+	// 初始化日志系统
+	logger.Init()
+
 	// 创建 GitHub 服务（可以传入 GitHub token 以提高 API 限制）
 	githubService := github.NewService("") // 留空则不使用 token
 
@@ -60,20 +64,49 @@ func (a *App) Startup(ctx context.Context) {
 	a.oauthService.SetContext(ctx)
 	a.deviceFlowService.SetContext(ctx)
 
-	// 使用项目目录下的 shared 文件夹作为配置目录
-	// 获取可执行文件所在目录
-	execDir, err := os.Executable()
-	if err != nil {
-		// 如果无法获取，使用当前工作目录
-		execDir = "."
-	}
-	// shared 目录在可执行文件的同级
-	sharedDir := filepath.Join(filepath.Dir(execDir), "shared")
+	// 查找 shared 目录的策略：
+	// 1. 尝试当前工作目录下的 shared（开发环境）
+	// 2. 尝试可执行文件目录下的 shared（生产环境）
+	// 3. 尝试用户主目录下的 github-star-app/shared
+	sharedDir := ""
+	configPaths := []string{}
 
-	if err := a.appConfig.Load(sharedDir); err != nil {
-		runtime.LogPrintf(ctx, "加载配置文件失败: %v", err)
+	// 当前工作目录下的 shared
+	wd, _ := os.Getwd()
+	configPaths = append(configPaths, filepath.Join(wd, "shared"))
+
+	// 可执行文件目录下的 shared
+	execDir, err := os.Executable()
+	if err == nil {
+		configPaths = append(configPaths, filepath.Join(filepath.Dir(execDir), "shared"))
+	}
+
+	// 用户主目录下的 github-star-app/shared
+	homeDir, _ := os.UserHomeDir()
+	configPaths = append(configPaths, filepath.Join(homeDir, "github-star-app", "shared"))
+
+	// 尝试每个路径
+	for _, path := range configPaths {
+		runtime.LogPrintf(ctx, "尝试加载配置: %s", filepath.Join(path, "app-config.toml"))
+		if err := a.appConfig.Load(path); err == nil {
+			sharedDir = path
+			runtime.LogPrintf(ctx, "配置文件已加载: %s", filepath.Join(path, "app-config.toml"))
+			break
+		}
+	}
+
+	if sharedDir == "" {
+		runtime.LogPrintf(ctx, "警告: 未找到配置文件，将在首次运行时创建默认配置")
+		// 使用第一个路径创建默认配置
+		a.appConfig.Load(configPaths[0])
+	}
+
+	// 打印 Client ID 状态（用于调试）
+	clientID := a.appConfig.GetGitHubClientID()
+	if clientID == "" {
+		runtime.LogPrintf(ctx, "警告: GitHub Client ID 未配置，请在 shared/app-config.toml 中设置")
 	} else {
-		runtime.LogPrintf(ctx, "配置文件路径: %s", filepath.Join(sharedDir, "app-config.toml"))
+		runtime.LogPrintf(ctx, "GitHub Client ID 已配置: %s...", clientID[:8]+"...")
 	}
 
 	// 打印登录状态
@@ -183,10 +216,11 @@ func (a *App) GetUserRepositories() ([]models.Repository, error) {
 
 // DeviceFlowInfo Device Flow 登录信息
 type DeviceFlowInfo struct {
-	UserCode       string `json:"user_code"`
-	VerificationURI string `json:"verification_uri"`
-	ExpiresIn       int    `json:"expires_in"`
-	Interval        int    `json:"interval"`
+	UserCode                string `json:"user_code"`
+	VerificationURI         string `json:"verification_uri"`
+	VerificationURIComplete string `json:"verification_uri_complete"`
+	ExpiresIn               int    `json:"expires_in"`
+	Interval                int    `json:"interval"`
 }
 
 // StartDeviceFlowLogin 开始 Device Flow 登录
@@ -198,10 +232,11 @@ func (a *App) StartDeviceFlowLogin() (*DeviceFlowInfo, error) {
 	}
 
 	return &DeviceFlowInfo{
-		UserCode:        response.UserCode,
-		VerificationURI: response.VerificationURI,
-		ExpiresIn:       response.ExpiresIn,
-		Interval:        response.Interval,
+		UserCode:                response.UserCode,
+		VerificationURI:         response.VerificationURI,
+		VerificationURIComplete: response.VerificationURIComplete,
+		ExpiresIn:               response.ExpiresIn,
+		Interval:                response.Interval,
 	}, nil
 }
 
@@ -221,4 +256,9 @@ func (a *App) GetLoginMethod() string {
 // SetLoginMethod 设置登录方式
 func (a *App) SetLoginMethod(method string) error {
 	return a.appConfig.SetLoginMethod(method)
+}
+
+// GetLogs 获取应用日志内容
+func (a *App) GetLogs() string {
+	return logger.GetLogs()
 }

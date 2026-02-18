@@ -42,3 +42,6 @@ Thumbs.db
 # Temporary files
 *.tmp
 tmp/
+
+# Config files with sensitive data
+shared/app-config.toml

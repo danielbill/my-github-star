@@ -14,6 +14,10 @@ export function GetLoginMethod() {
   return window['go']['backend']['App']['GetLoginMethod']();
 }
 
+export function GetLogs() {
+  return window['go']['backend']['App']['GetLogs']();
+}
+
 export function GetRepositoryByID(arg1, arg2) {
   return window['go']['backend']['App']['GetRepositoryByID'](arg1, arg2);
 }

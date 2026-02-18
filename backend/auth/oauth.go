@@ -8,15 +8,15 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-"log"
 	"net/http"
 	"time"
 
+	"github-star-app/backend/config"
+	"github-star-app/backend/logger"
+	"github-star-app/backend/models"
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"golang.org/x/oauth2"
 	"golang.org/x/oauth2/github"
-	"github-star-app/backend/config"
-	"github-star-app/backend/models"
 )
 
 const (
@@ -34,6 +34,7 @@ type OAuthService struct {
 
 // NewOAuthService 创建 OAuth 服务
 func NewOAuthService(cfg *config.Config, sessionStore models.AuthSessionStore) *OAuthService {
+	logger.Init()
 	return &OAuthService{
 		config:       cfg,
 		sessionStore: sessionStore,
@@ -101,7 +102,7 @@ func (s *OAuthService) StartLogin() (string, error) {
 	s.callbackServer = NewCallbackServer(callbackPort, s.handleCallback)
 	go func() {
 		if err := s.callbackServer.Start(); err != nil {
-			log.Printf("[OAuth] Callback server error: %v", err)
+			logger.Info("[OAuth] Callback server error: %v", err)
 		}
 	}()
 
@@ -112,13 +113,13 @@ func (s *OAuthService) StartLogin() (string, error) {
 		oauth2.SetAuthURLParam("code_challenge_method", "S256"),
 	)
 
-	log.Printf("[OAuth] Authorization URL generated, state=%s", state)
+	logger.Info("[OAuth] Authorization URL generated, state=%s", state)
 	return authURL, nil
 }
 
 // handleCallback 处理 OAuth 回调
 func (s *OAuthService) handleCallback(code, state string) error {
-	log.Printf("[OAuth] Received callback, state=%s", state)
+	logger.Info("[OAuth] Received callback, state=%s", state)
 
 	// 1. 验证 state
 	session, err := s.sessionStore.LoadSession(state)
@@ -137,7 +138,7 @@ func (s *OAuthService) handleCallback(code, state string) error {
 		return fmt.Errorf("交换 token 失败: %w", err)
 	}
 
-	log.Printf("[OAuth] Token exchanged successfully")
+	logger.Info("[OAuth] Token exchanged successfully")
 
 	// 3. 获取用户信息
 	user, err := s.fetchUserInfo(token.AccessToken)
@@ -145,9 +146,9 @@ func (s *OAuthService) handleCallback(code, state string) error {
 		return fmt.Errorf("获取用户信息失败: %w", err)
 	}
 
-	log.Printf("[OAuth] User info fetched: %s (%s)", user.Login, user.Name)
+	logger.Info("[OAuth] User info fetched: %s (%s)", user.Login, user.Name)
 
-	// 4. 存储到配置文件
+	// 存储到配置文件
 	if err := s.config.SetAuth(
 		token.AccessToken,
 		user.ID,
@@ -158,21 +159,21 @@ func (s *OAuthService) handleCallback(code, state string) error {
 		return fmt.Errorf("存储认证信息失败: %w", err)
 	}
 
-	// 5. 通知前端（通过 Wails Events）
+	// 通知前端（通过 Wails Events）
 	if s.ctx != nil {
 		runtime.EventsEmit(s.ctx, "login-success", map[string]interface{}{
-			"id":          user.ID,
-			"login":       user.Login,
-			"name":        user.Name,
-			"email":       user.Email,
-			"avatar_url":  user.AvatarURL,
-			"bio":         user.Bio,
-			"location":    user.Location,
-			"blog":        user.Blog,
-			"company":     user.Company,
+			"id":           user.ID,
+			"login":        user.Login,
+			"name":         user.Name,
+			"email":        user.Email,
+			"avatar_url":   user.AvatarURL,
+			"bio":          user.Bio,
+			"location":     user.Location,
+			"blog":         user.Blog,
+			"company":      user.Company,
 			"public_repos": user.PublicRepos,
-			"followers":   user.Followers,
-			"following":   user.Following,
+			"followers":    user.Followers,
+			"following":    user.Following,
 		})
 	}
 
@@ -236,8 +237,9 @@ func (s *OAuthService) IsLoggedIn() bool {
 
 // Logout 登出
 func (s *OAuthService) Logout() error {
+	// 清除配置
 	if err := s.config.ClearAuth(); err != nil {
-		return fmt.Errorf("清除认证信息失败: %w", err)
+		logger.Info("[OAuth] 清除认证信息失败: %v", err)
 	}
 
 	// 通知前端
@@ -245,7 +247,7 @@ func (s *OAuthService) Logout() error {
 		runtime.EventsEmit(s.ctx, "logout-success", nil)
 	}
 
-	log.Printf("[OAuth] User logged out")
+	logger.Info("[OAuth] User logged out")
 	return nil
 }
 
@@ -325,15 +327,15 @@ func (s *OAuthService) GetUserRepositories() ([]models.Repository, error) {
 	repos := make([]models.Repository, len(apiRepos))
 	for i, repo := range apiRepos {
 		repos[i] = models.Repository{
-			ID:               repo.ID,
-			Name:             repo.Name,
-			FullName:         repo.FullName,
-			Owner:            repo.Owner.Login,
-			Description:      repo.Description,
-			Language:         repo.Language,
-			StargazersCount:  repo.Stargazers,
-			ForksCount:       repo.Forks,
-			HTMLURL:          repo.HTMLURL,
+			ID:              repo.ID,
+			Name:            repo.Name,
+			FullName:        repo.FullName,
+			Owner:           repo.Owner.Login,
+			Description:     repo.Description,
+			Language:        repo.Language,
+			StargazersCount: repo.Stargazers,
+			ForksCount:      repo.Forks,
+			HTMLURL:         repo.HTMLURL,
 		}
 	}
 
@@ -393,15 +395,15 @@ func (s *OAuthService) GetStarredRepositories() ([]models.Repository, error) {
 	repos := make([]models.Repository, len(apiRepos))
 	for i, repo := range apiRepos {
 		repos[i] = models.Repository{
-			ID:               repo.ID,
-			Name:             repo.Name,
-			FullName:         repo.FullName,
-			Owner:            repo.Owner.Login,
-			Description:      repo.Description,
-			Language:         repo.Language,
-			StargazersCount:  repo.Stargazers,
-			ForksCount:       repo.Forks,
-			HTMLURL:          repo.HTMLURL,
+			ID:              repo.ID,
+			Name:            repo.Name,
+			FullName:        repo.FullName,
+			Owner:           repo.Owner.Login,
+			Description:     repo.Description,
+			Language:        repo.Language,
+			StargazersCount: repo.Stargazers,
+			ForksCount:      repo.Forks,
+			HTMLURL:         repo.HTMLURL,
 		}
 	}
 
