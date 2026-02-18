@@ -8,7 +8,10 @@
       "Bash(go build:*)",
       "Bash(wails generate module:*)",
       "Bash(npm run build)",
-      "Bash(wails build:*)"
+      "Bash(wails build:*)",
+      "Bash(git push:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)"
     ]
   }
 }
