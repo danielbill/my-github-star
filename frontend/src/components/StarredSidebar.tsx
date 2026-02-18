@@ -87,7 +87,7 @@ export function StarredSidebar() {
   return (
     <Paper
       radius="lg"
-      sx={{
+      style={{
         backgroundColor: 'var(--color-bg-tertiary)',
         border: '1px solid var(--color-border-default)',
         height: '100%',
@@ -96,11 +96,11 @@ export function StarredSidebar() {
         flexDirection: 'column',
       }}
     >
-      <div className={classes.header}>
+      <div className={classes.header} >
         <Text size="sm" fw={600} className={classes.headerTitle}>
           个人星标仓库 [{repositories.length}]
         </Text>
-        <Tooltip label="刷新" position="bottom">
+        {/* <Tooltip label="刷新" position="bottom">
           <ActionIcon
             variant="subtle"
             size={20}
@@ -111,7 +111,7 @@ export function StarredSidebar() {
           >
             <IconRefresh size={16} />
           </ActionIcon>
-        </Tooltip>
+        </Tooltip> */}
       </div>
 
       <ScrollArea flex={1}>

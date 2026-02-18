@@ -11,7 +11,12 @@
       "Bash(wails build:*)",
       "Bash(git push:*)",
       "Bash(git rm:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(go get:*)",
+      "Bash(taskkill:*)",
+      "Bash(wails generate bindings:*)",
+      "Bash(go test:*)",
+      "Bash(go run:*)"
     ]
   }
 }

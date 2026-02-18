@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { MantineProvider, createTheme } from '@mantine/core';
-import { GetTrendingRepositories } from '../wailsjs/go/backend/App';
+import { LoadTrendingData, RefreshTrending } from '../wailsjs/go/backend/App';
 import { MainLayout } from './components/MainLayout';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
 import { StarredSidebar } from './components/StarredSidebar';
-import { Repository, TimeRange, LanguageFilter } from './types';
+import { Repository, TimeRange } from './types';
 import './style.css';
 import './App.css';
 import '@mantine/core/styles.css';
@@ -63,46 +63,77 @@ const theme = createTheme({
 });
 
 function App() {
-  const [repositories, setRepositories] = useState<Repository[]>([]);
-  const [loading, setLoading] = useState(false);
+  // 数据状态
+  const [weeklyRepos, setWeeklyRepos] = useState<Repository[]>([]);
+  const [monthlyRepos, setMonthlyRepos] = useState<Repository[]>([]);
+  const [weeklyCacheTime, setWeeklyCacheTime] = useState<string>('');
+  const [monthlyCacheTime, setMonthlyCacheTime] = useState<string>('');
+
+  // UI 状态
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string>('');
   const [timeRange, setTimeRange] = useState<TimeRange>('weekly');
-  const [language, setLanguage] = useState<LanguageFilter>('');
-  const [lastUpdate, setLastUpdate] = useState<Date>();
+  const [refreshMessage, setRefreshMessage] = useState<string>('');
 
-  // 加载趋势仓库
-  const loadRepositories = useCallback(async () => {
+  // 当前显示的仓库列表
+  const currentRepos = timeRange === 'weekly' ? weeklyRepos : monthlyRepos;
+  const currentCacheTime = timeRange === 'weekly' ? weeklyCacheTime : monthlyCacheTime;
+
+  // 加载初始数据
+  const loadInitialData = useCallback(async () => {
     setLoading(true);
     setError('');
 
     try {
-      const result = await GetTrendingRepositories(language, timeRange);
-      const repos = (result || []).map((repo: any) => ({
-        ...repo,
-        created_at: repo.created_at instanceof Date ? repo.created_at.toISOString() : String(repo.created_at),
-      }));
-      // 按照周期内新增星标数降序排序
-      repos.sort((a, b) => (b.stars_since || 0) - (a.stars_since || 0));
-      setRepositories(repos);
-      setLastUpdate(new Date());
+      const result = await LoadTrendingData();
+      if (result) {
+        setWeeklyRepos(result.weekly.repositories || []);
+        setMonthlyRepos(result.monthly.repositories || []);
+        setWeeklyCacheTime(result.weekly.cached_at || '');
+        setMonthlyCacheTime(result.monthly.cached_at || '');
+      }
     } catch (err) {
-      console.error('加载失败:', err);
-      setError(err instanceof Error ? err.message : '加载失败，请稍后重试');
-      setRepositories([]);
+      console.error('加载数据失败:', err);
+      setError(err instanceof Error ? err.message : '加载数据失败');
     } finally {
       setLoading(false);
     }
-  }, [language, timeRange]);
+  }, []);
 
-  // 初始加载和当 timeRange 或 language 变化时重新加载
+  // 手动刷新数据
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    setError('');
+    setRefreshMessage('');
+
+    try {
+      const result = await RefreshTrending();
+      if (result) {
+        if (result.success) {
+          setWeeklyRepos(result.weekly.repositories || []);
+          setMonthlyRepos(result.monthly.repositories || []);
+          setWeeklyCacheTime(result.weekly.cached_at || '');
+          setMonthlyCacheTime(result.monthly.cached_at || '');
+          setRefreshMessage(result.message || '刷新成功');
+        } else {
+          setRefreshMessage(result.message || '刷新失败');
+        }
+      }
+    } catch (err) {
+      console.error('刷新失败:', err);
+      const errorMsg = err instanceof Error ? err.message : '刷新失败';
+      setError(errorMsg);
+      setRefreshMessage(errorMsg);
+    } finally {
+      setRefreshing(false);
+    }
+  }, []);
+
+  // 初始加载
   useEffect(() => {
-    loadRepositories();
-  }, [timeRange, language]);
-
-  // 刷新按钮
-  const handleRefresh = () => {
-    loadRepositories();
-  };
+    loadInitialData();
+  }, [loadInitialData]);
 
   return (
     <MantineProvider theme={theme}>
@@ -115,15 +146,16 @@ function App() {
               <MainLayout
                 onRefresh={handleRefresh}
                 loading={loading}
+                refreshing={refreshing}
                 timeRange={timeRange}
                 onTimeRangeChange={setTimeRange}
-                language={language}
-                onLanguageChange={setLanguage}
-                repositoryCount={repositories.length}
-                lastUpdate={lastUpdate}
+                repositoryCount={currentRepos.length}
+                cacheTime={currentCacheTime}
+                refreshMessage={refreshMessage}
+                error={error}
               >
                 <ProjectList
-                  repositories={repositories}
+                  repositories={currentRepos}
                   loading={loading}
                   error={error}
                 />

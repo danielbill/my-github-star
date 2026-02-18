@@ -6,9 +6,11 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
+	"time"
 
 	"github-star-app/backend/auth"
 	"github-star-app/backend/config"
+	"github-star-app/backend/database"
 	"github-star-app/backend/github"
 	"github-star-app/backend/logger"
 	"github-star-app/backend/models"
@@ -22,11 +24,13 @@ type App struct {
 	githubService *github.Service
 	cache         []models.Repository
 	cacheMutex    sync.RWMutex
+	db            *database.DB
 
 	// 认证相关
 	oauthService      *auth.OAuthService
 	deviceFlowService *auth.DeviceFlowService
 	appConfig         *config.Config
+	sharedDir         string // 记录 shared 目录路径
 }
 
 // NewApp 创建新的应用实例
@@ -98,7 +102,24 @@ func (a *App) Startup(ctx context.Context) {
 	if sharedDir == "" {
 		runtime.LogPrintf(ctx, "警告: 未找到配置文件，将在首次运行时创建默认配置")
 		// 使用第一个路径创建默认配置
-		a.appConfig.Load(configPaths[0])
+		sharedDir = configPaths[0]
+		a.appConfig.Load(sharedDir)
+	}
+
+	// 保存 shared 目录路径
+	a.sharedDir = sharedDir
+
+	// 初始化数据库
+	db, err := database.NewDB(sharedDir)
+	if err != nil {
+		runtime.LogPrintf(ctx, "初始化数据库失败: %v", err)
+	} else {
+		a.db = db
+		if err := a.db.Init(); err != nil {
+			runtime.LogPrintf(ctx, "数据库表初始化失败: %v", err)
+		} else {
+			runtime.LogPrintf(ctx, "数据库初始化成功: %s", filepath.Join(sharedDir, "trending.db"))
+		}
 	}
 
 	// 打印 Client ID 状态（用于调试）
@@ -114,43 +135,13 @@ func (a *App) Startup(ctx context.Context) {
 		_, login, name, _ := a.appConfig.GetAuthUser()
 		runtime.LogPrintf(ctx, "用户已登录: %s (%s)", login, name)
 	}
+
+	// 自动加载初始数据
+	a.autoLoadInitialData(ctx)
 }
 
 // Shutdown 应用关闭时调用
 func (a *App) Shutdown(ctx context.Context) {
-}
-
-// GetTrendingRepositories 获取趋势仓库
-// language: 编程语言过滤，如 "go", "python"，空字符串表示全部
-// since: 时间范围 "daily", "weekly", "monthly"
-func (a *App) GetTrendingRepositories(language, since string) ([]models.Repository, error) {
-	repos, err := a.githubService.GetTrendingRepositories(language, since)
-	if err != nil {
-		return nil, fmt.Errorf("获取趋势仓库失败: %w", err)
-	}
-
-	// 更新缓存
-	a.cacheMutex.Lock()
-	a.cache = repos
-	a.cacheMutex.Unlock()
-
-	return repos, nil
-}
-
-// RefreshRepositories 刷新仓库列表（使用默认参数）
-func (a *App) RefreshRepositories() ([]models.Repository, error) {
-	return a.GetTrendingRepositories("", "weekly")
-}
-
-// GetCachedRepositories 从缓存获取仓库
-func (a *App) GetCachedRepositories() []models.Repository {
-	a.cacheMutex.RLock()
-	defer a.cacheMutex.RUnlock()
-
-	// 返回副本
-	result := make([]models.Repository, len(a.cache))
-	copy(result, a.cache)
-	return result
 }
 
 // GetRepositoryByID 根据 owner/repo 获取仓库详情
@@ -262,3 +253,217 @@ func (a *App) SetLoginMethod(method string) error {
 func (a *App) GetLogs() string {
 	return logger.GetLogs()
 }
+
+// ========== 趋势数据相关方法（使用数据库缓存）==========
+
+// TrendingData 趋势数据响应
+type TrendingData struct {
+	Repositories []models.Repository `json:"repositories"`
+	CachedAt     string              `json:"cached_at"` // 格式: 2006-01-02 15:00:00
+}
+
+// LoadTrendingDataResponse 加载趋势数据的响应
+type LoadTrendingDataResponse struct {
+	Weekly  TrendingData `json:"weekly"`
+	Monthly TrendingData `json:"monthly"`
+}
+
+// LoadTrendingData 从数据库加载最新的 weekly 和 monthly 数据
+func (a *App) LoadTrendingData() (*LoadTrendingDataResponse, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("数据库未初始化")
+	}
+
+	response := &LoadTrendingDataResponse{}
+
+	// 加载 weekly 数据
+	weeklyEntries, err := a.db.GetLatestEntries("weekly")
+	if err != nil {
+		return nil, fmt.Errorf("加载 weekly 数据失败: %w", err)
+	}
+	response.Weekly.Repositories = a.convertEntriesToModels(weeklyEntries)
+	if len(weeklyEntries) > 0 {
+		response.Weekly.CachedAt = database.FormatCachedTime(weeklyEntries[0].CachedAt)
+	}
+
+	// 加载 monthly 数据
+	monthlyEntries, err := a.db.GetLatestEntries("monthly")
+	if err != nil {
+		return nil, fmt.Errorf("加载 monthly 数据失败: %w", err)
+	}
+	response.Monthly.Repositories = a.convertEntriesToModels(monthlyEntries)
+	if len(monthlyEntries) > 0 {
+		response.Monthly.CachedAt = database.FormatCachedTime(monthlyEntries[0].CachedAt)
+	}
+
+	return response, nil
+}
+
+// RefreshTrendingResponse 刷新趋势数据的响应
+type RefreshTrendingResponse struct {
+	Success  bool         `json:"success"`
+	Message  string       `json:"message"`
+	Weekly   TrendingData `json:"weekly"`
+	Monthly  TrendingData `json:"monthly"`
+}
+
+// RefreshTrending 手动刷新趋势数据（同时爬取 weekly 和 monthly）
+func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("数据库未初始化")
+	}
+
+	now := time.Now()
+	currentHour := now.Truncate(time.Hour)
+
+	response := &RefreshTrendingResponse{
+		Success: true,
+		Message: "刷新成功",
+	}
+
+	// 检查 weekly 是否需要刷新
+	weeklyNeedRefresh, weeklyCachedAt, _ := a.db.ShouldRefresh("weekly")
+	if weeklyNeedRefresh {
+		runtime.LogPrintf(a.ctx, "开始爬取 weekly 趋势数据...")
+		weeklyRepos, err := a.githubService.GetTrendingRepositories("", "weekly")
+		if err != nil {
+			runtime.LogPrintf(a.ctx, "爬取 weekly 数据失败: %v", err)
+			return &RefreshTrendingResponse{
+				Success: false,
+				Message: fmt.Sprintf("爬取 weekly 数据失败: %v", err),
+			}, err
+		}
+		weeklyEntries := a.convertModelsToEntries(weeklyRepos)
+		if err := a.db.SaveTrendingEntries(weeklyEntries, "weekly", currentHour); err != nil {
+			runtime.LogPrintf(a.ctx, "保存 weekly 数据失败: %v", err)
+		} else {
+			runtime.LogPrintf(a.ctx, "已保存 %d 条 weekly 趋势数据", len(weeklyRepos))
+		}
+		response.Weekly.Repositories = weeklyRepos
+		response.Weekly.CachedAt = database.FormatCachedTime(currentHour)
+	} else {
+		// 使用缓存数据
+		weeklyEntries, _ := a.db.GetLatestEntries("weekly")
+		response.Weekly.Repositories = a.convertEntriesToModels(weeklyEntries)
+		if len(weeklyEntries) > 0 {
+			response.Weekly.CachedAt = database.FormatCachedTime(weeklyEntries[0].CachedAt)
+		}
+		response.Message = fmt.Sprintf("weekly 数据缓存于 %s，跳过爬取", database.FormatCachedTime(weeklyCachedAt))
+	}
+
+	// 检查 monthly 是否需要刷新
+	monthlyNeedRefresh, monthlyCachedAt, _ := a.db.ShouldRefresh("monthly")
+	if monthlyNeedRefresh {
+		runtime.LogPrintf(a.ctx, "开始爬取 monthly 趋势数据...")
+		monthlyRepos, err := a.githubService.GetTrendingRepositories("", "monthly")
+		if err != nil {
+			runtime.LogPrintf(a.ctx, "爬取 monthly 数据失败: %v", err)
+			// 即使失败也继续，因为 weekly 可能已经成功
+		} else {
+			monthlyEntries := a.convertModelsToEntries(monthlyRepos)
+			if err := a.db.SaveTrendingEntries(monthlyEntries, "monthly", currentHour); err != nil {
+				runtime.LogPrintf(a.ctx, "保存 monthly 数据失败: %v", err)
+			} else {
+				runtime.LogPrintf(a.ctx, "已保存 %d 条 monthly 趋势数据", len(monthlyRepos))
+			}
+			response.Monthly.Repositories = monthlyRepos
+			response.Monthly.CachedAt = database.FormatCachedTime(currentHour)
+		}
+	} else {
+		// 使用缓存数据
+		monthlyEntries, _ := a.db.GetLatestEntries("monthly")
+		response.Monthly.Repositories = a.convertEntriesToModels(monthlyEntries)
+		if len(monthlyEntries) > 0 {
+			response.Monthly.CachedAt = database.FormatCachedTime(monthlyEntries[0].CachedAt)
+		}
+		if weeklyNeedRefresh {
+			response.Message = fmt.Sprintf("monthly 数据缓存于 %s，跳过爬取", database.FormatCachedTime(monthlyCachedAt))
+		}
+	}
+
+	return response, nil
+}
+
+// GetTrendingRepositories 根据 timeRange 返回对应的数据
+// 只从数据库读取，不触发网络请求
+func (a *App) GetTrendingRepositories(timeRange string) ([]models.Repository, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("数据库未初始化")
+	}
+
+	entries, err := a.db.GetLatestEntries(timeRange)
+	if err != nil {
+		return nil, fmt.Errorf("获取 %s 数据失败: %w", timeRange, err)
+	}
+
+	return a.convertEntriesToModels(entries), nil
+}
+
+// convertModelsToEntries 将 models.Repository 转换为 database.TrendingEntry
+func (a *App) convertModelsToEntries(repos []models.Repository) []database.TrendingEntry {
+	entries := make([]database.TrendingEntry, len(repos))
+	for i, repo := range repos {
+		entries[i] = database.TrendingEntry{
+			GithubID:        repo.ID,
+			FullName:        repo.FullName,
+			Name:            repo.Name,
+			Owner:           repo.Owner,
+			Description:     repo.Description,
+			StargazersCount: repo.StargazersCount,
+			StarsSince:      repo.StarsSince,
+			HTMLURL:         repo.HTMLURL,
+		}
+	}
+	return entries
+}
+
+// convertEntriesToModels 将 database.TrendingEntry 转换为 models.Repository
+func (a *App) convertEntriesToModels(entries []database.TrendingEntry) []models.Repository {
+	repos := make([]models.Repository, len(entries))
+	for i, entry := range entries {
+		repos[i] = models.Repository{
+			ID:               entry.GithubID,
+			FullName:         entry.FullName,
+			Name:             entry.Name,
+			Owner:            entry.Owner,
+			Description:      entry.Description,
+			StargazersCount:  entry.StargazersCount,
+			StarsSince:       entry.StarsSince,
+			HTMLURL:          entry.HTMLURL,
+			CreatedAt:        models.JSONDateTime{Time: entry.CachedAt},
+			UpdatedAt:        models.JSONDateTime{Time: entry.CachedAt},
+		}
+	}
+	return repos
+}
+
+// autoLoadInitialData 应用启动时自动加载初始数据
+// 如果数据库为空，自动触发首次爬取
+func (a *App) autoLoadInitialData(ctx context.Context) {
+	if a.db == nil {
+		runtime.LogPrintf(ctx, "数据库未初始化，跳过自动加载")
+		return
+	}
+
+	hasData, err := a.db.HasData()
+	if err != nil {
+		runtime.LogPrintf(ctx, "检查数据库状态失败: %v", err)
+		return
+	}
+
+	if !hasData {
+		runtime.LogPrintf(ctx, "数据库为空，开始自动爬取初始数据...")
+		// 在后台 goroutine 中执行，不阻塞启动
+		go func() {
+			_, err := a.RefreshTrending()
+			if err != nil {
+				runtime.LogPrintf(ctx, "自动爬取初始数据失败: %v", err)
+			} else {
+				runtime.LogPrintf(ctx, "自动爬取初始数据成功")
+			}
+		}()
+	} else {
+		runtime.LogPrintf(ctx, "数据库已有数据，跳过自动爬取")
+	}
+}
+

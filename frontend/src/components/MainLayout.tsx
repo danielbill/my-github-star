@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   Title,
   Flex,
@@ -16,6 +16,7 @@ import {
   Button,
   Paper,
   ScrollArea,
+  Badge,
 } from '@mantine/core';
 import {
   IconBrandGithub,
@@ -25,57 +26,49 @@ import {
   IconAlertCircle,
   IconCopy,
   IconBug,
+  IconNews,
+  IconTrendingUp,
 } from '@tabler/icons-react';
-import { TimeRange, LanguageFilter } from '../types';
+import { TimeRange } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { GetLogs } from '../../wailsjs/go/backend/App';
 import { StarredSidebar } from './StarredSidebar';
 
 type ViewScope = 'all' | 'mine';
+type PageType = 'trend' | 'news';
 
 interface MainLayoutProps {
   children: React.ReactNode;
   onRefresh: () => void;
   loading: boolean;
+  refreshing: boolean;
   timeRange: TimeRange;
   onTimeRangeChange: (value: TimeRange) => void;
-  language: LanguageFilter;
-  onLanguageChange: (value: LanguageFilter) => void;
   repositoryCount: number;
-  lastUpdate?: Date;
+  cacheTime: string;
+  refreshMessage: string;
+  error: string;
 }
 
 const timeRangeOptions = [
-  { value: 'daily', label: '今日' },
   { value: 'weekly', label: '本周' },
   { value: 'monthly', label: '本月' },
-];
-
-const languageOptions = [
-  { value: '', label: '全部语言' },
-  { value: 'JavaScript', label: 'JavaScript' },
-  { value: 'TypeScript', label: 'TypeScript' },
-  { value: 'Python', label: 'Python' },
-  { value: 'Go', label: 'Go' },
-  { value: 'Rust', label: 'Rust' },
-  { value: 'Java', label: 'Java' },
-  { value: 'C++', label: 'C++' },
-  { value: 'Vue', label: 'Vue' },
-  { value: 'HTML', label: 'HTML' },
 ];
 
 export function MainLayout({
   children,
   onRefresh,
   loading,
+  refreshing,
   timeRange,
   onTimeRangeChange,
-  language,
-  onLanguageChange,
   repositoryCount,
-  lastUpdate,
+  cacheTime,
+  refreshMessage,
+  error,
 }: MainLayoutProps) {
   const [viewScope, setViewScope] = useState<ViewScope>('all');
+  const [currentPage, setCurrentPage] = useState<PageType>('trend');
   const [loginError, setLoginError] = useState<string | null>(null);
   const [deviceCodeModalOpen, setDeviceCodeModalOpen] = useState(false);
   const [logsModalOpen, setLogsModalOpen] = useState(false);
@@ -137,6 +130,20 @@ export function MainLayout({
     }
   };
 
+  const handleTrendClick = () => {
+    setCurrentPage('trend');
+  };
+
+  const handleNewsClick = () => {
+    setCurrentPage('news');
+  };
+
+  const handleRefreshClick = () => {
+    if (currentPage === 'trend') {
+      onRefresh();
+    }
+  };
+
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#212830' }}>
       <header className="custom-header" style={{
@@ -168,44 +175,136 @@ export function MainLayout({
             </Title>
           </div>
 
-          {/* 时间切换 - 居中 */}
-          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
-            <SegmentedControl
-              data={[{ value: 'weekly', label: '本周' }, { value: 'monthly', label: '本月' }]}
-              value={timeRange === 'daily' ? 'weekly' : timeRange}
-              onChange={handleTimeRangeChange}
-              size="xs"
-              disabled={loading}
-              styles={{
-                root: {
-                  backgroundColor: '#3f4b5c',
-                  border: '1px solid #4a576a',
-                  borderRadius: '4px',
-                  padding: '2px',
-                  height: '30px',
-                },
-                indicator: {
-                  backgroundColor: '#4a576a',
-                  borderRadius: '2px',
-                  height: 'calc(100% - 4px)',
-                  margin: '-1px',
-                },
-                label: {
-                  color: '#a0a0a0',
-                  fontSize: '12px',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 12px',
-                  zIndex: 2,
-                  position: 'relative',
-                },
+          {/* Trend / News 链接 - 居中 */}
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1, display: 'flex', gap: '24px', alignItems: 'center' }}>
+            {/* Trend 链接 */}
+            <UnstyledButton
+              onClick={handleTrendClick}
+              style={{
+                color: currentPage === 'trend' ? '#ffffff' : '#6a7a90',
+                fontSize: '14px',
+                fontWeight: currentPage === 'trend' ? 500 : 400,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                transition: 'all 0.2s',
               }}
-            />
+              onMouseEnter={(e) => {
+                if (currentPage !== 'trend') {
+                  e.currentTarget.style.color = '#8a9ab0';
+                  e.currentTarget.style.backgroundColor = '#3f4b5c';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== 'trend') {
+                  e.currentTarget.style.color = '#6a7a90';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              Trend
+            </UnstyledButton>
+
+            {/* News 链接 */}
+            <UnstyledButton
+              onClick={handleNewsClick}
+              style={{
+                color: currentPage === 'news' ? '#ffffff' : '#6a7a90',
+                fontSize: '14px',
+                fontWeight: currentPage === 'news' ? 500 : 400,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                padding: '4px 12px',
+                borderRadius: '4px',
+                transition: 'all 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                if (currentPage !== 'news') {
+                  e.currentTarget.style.color = '#8a9ab0';
+                  e.currentTarget.style.backgroundColor = '#3f4b5c';
+                }
+              }}
+              onMouseLeave={(e) => {
+                if (currentPage !== 'news') {
+                  e.currentTarget.style.color = '#6a7a90';
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                }
+              }}
+            >
+              News
+            </UnstyledButton>
+
+            {/* 时间切换（仅在 Trend 页显示） */}
+            {currentPage === 'trend' && (
+              <SegmentedControl
+                data={timeRangeOptions}
+                value={timeRange}
+                onChange={onTimeRangeChange}
+                size="xs"
+                styles={{
+                  root: {
+                    backgroundColor: '#3f4b5c',
+                    border: '1px solid #4a576a',
+                    borderRadius: '4px',
+                    padding: '2px',
+                    height: '28px',
+                    marginLeft: '12px',
+                  },
+                  indicator: {
+                    backgroundColor: '#4a576a',
+                    borderRadius: '2px',
+                    height: 'calc(100% - 4px)',
+                    margin: '-1px',
+                  },
+                  label: {
+                    color: '#a0a0a0',
+                    fontSize: '12px',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    padding: '0 12px',
+                    zIndex: 2,
+                    position: 'relative',
+                  },
+                }}
+              />
+            )}
           </div>
 
           <Flex gap="lg" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
+            {/* Trend 刷新按钮（仅在 Trend 页显示） */}
+            {currentPage === 'trend' && (
+              <>
+                <Tooltip label={`缓存时间: ${cacheTime || '未知'}`} position="bottom-end" withArrow>
+                  <ActionIcon
+                    variant="subtle"
+                    size="md"
+                    radius="sm"
+                    onClick={handleRefreshClick}
+                    disabled={refreshing}
+                    styles={{
+                      root: {
+                        backgroundColor: '#3f4b5c',
+                        color: refreshing ? '#6a7a90' : '#a0a0a0',
+                        '&:hover': {
+                          backgroundColor: '#4a576a',
+                        },
+                      },
+                    }}
+                  >
+                    <IconRefresh size={18} className={refreshing ? 'spin' : ''} />
+                  </ActionIcon>
+                </Tooltip>
+                {cacheTime && (
+                  <Text size="xs" c="#6a7a90">
+                    {cacheTime}
+                  </Text>
+                )}
+              </>
+            )}
+
             {/* 日志按钮 */}
             <Tooltip label="查看日志" position="bottom-end" withArrow>
               <ActionIcon
@@ -294,15 +393,45 @@ export function MainLayout({
 
       <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '18px' }}>
-          <div style={{ flex: 6 }}>
-            {children}
-          </div>
-          <div style={{ flex: 4 }}>
-            {/* 我的星标列表 - 登录后显示 */}
-            <StarredSidebar />
-          </div>
+          {currentPage === 'trend' ? (
+            <>
+              <div style={{ flex: 6 }}>
+                {children}
+              </div>
+              <div style={{ flex: 4 }}>
+                {/* 我的星标列表 - 登录后显示 */}
+                <StarredSidebar />
+              </div>
+            </>
+          ) : (
+            <div style={{ flex: 1, textAlign: 'center', padding: '100px 0' }}>
+              <IconNews size={64} c="#4a576a" style={{ marginBottom: '20px' }} />
+              <Text size="xl" c="#a0a0a0">News 页面即将推出</Text>
+              <Text size="sm" c="#6a7a90" mt="sm">敬请期待...</Text>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* 刷新消息提示 */}
+      {refreshMessage && (
+        <Alert
+          icon={refreshing ? <IconRefresh size={16} /> : <IconAlertCircle size={16} />}
+          title={refreshing ? '正在刷新...' : '刷新结果'}
+          color={refreshing ? 'blue' : error ? 'red' : 'green'}
+          style={{
+            position: 'fixed',
+            bottom: 20,
+            left: 20,
+            maxWidth: 400,
+            zIndex: 2000,
+          }}
+          withClose
+          onClose={() => {}}
+        >
+          {refreshMessage}
+        </Alert>
+      )}
 
       {/* 登录错误提示 */}
       {loginError && (
