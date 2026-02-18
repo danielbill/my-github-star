@@ -73,6 +73,17 @@
   transition: all 0.15s ease;
 }
 
+/* 星标增长数 */
+.starsGrowth {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background-color: rgba(63, 185, 80, 0.1);
+  border-radius: 12px;
+  flex-shrink: 0;
+}
+
 /* 旧样式保留 */
 .card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;

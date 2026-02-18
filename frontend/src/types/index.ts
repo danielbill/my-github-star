@@ -7,6 +7,9 @@ export interface Repository {
   description: string;
   language: string;
   stargazers_count: number;
+  stars_today?: number;      // 今日新增星标数
+  stars_since?: number;      // 时间范围内新增星标数
+  forks_count?: number;      // Fork 数量
   html_url: string;
   created_at: string;
   updated_at: string;

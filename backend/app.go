@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"sync"
 
+	"github.com/wailsapp/wails/v2/pkg/runtime"
 	"github-star-app/backend/github"
 	"github-star-app/backend/models"
 )
@@ -78,4 +79,11 @@ func (a *App) GetRepositoryByID(owner, repo string) (*models.Repository, error) 
 // Greet 测试用的问候函数
 func (a *App) Greet(name string) string {
 	return fmt.Sprintf("Hello %s, It's show time!", name)
+}
+
+// OpenURL 在默认浏览器中打开 URL
+func (a *App) OpenURL(url string) {
+	if a.ctx != nil {
+		runtime.BrowserOpenURL(a.ctx, url)
+	}
 }

@@ -11,6 +11,8 @@ export function GetTrendingRepositories(arg1:string,arg2:string):Promise<Array<m
 
 export function Greet(arg1:string):Promise<string>;
 
+export function OpenURL(arg1:string):Promise<void>;
+
 export function RefreshRepositories():Promise<Array<models.Repository>>;
 
 export function Shutdown(arg1:context.Context):Promise<void>;

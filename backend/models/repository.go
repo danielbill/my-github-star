@@ -45,6 +45,9 @@ type Repository struct {
 	Description      string       `json:"description"`
 	Language         string       `json:"language"`
 	StargazersCount  int          `json:"stargazers_count"`
+	StarsToday       int          `json:"stars_today"`        // 今日新增星标数
+	StarsSince       int          `json:"stars_since"`        // 时间范围内新增星标数
+	ForksCount       int          `json:"forks_count"`        // Fork 数量
 	HTMLURL          string       `json:"html_url"`
 	CreatedAt        JSONDateTime `json:"created_at"`
 	UpdatedAt        JSONDateTime `json:"updated_at"`

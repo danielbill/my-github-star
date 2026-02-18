@@ -1,8 +1,9 @@
 import React from 'react';
 import { Badge, Group, Text, Anchor, Button, Flex } from '@mantine/core';
-import { IconStar, IconBrandGithub, IconStarFilled, IconGitFork } from '@tabler/icons-react';
+import { IconBrandGithub, IconStarFilled, IconGitFork } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { Repository } from '../types';
+import { OpenURL } from '../../wailsjs/go/backend/App';
 import classes from './ProjectCard.module.css';
 
 interface ProjectCardProps {
@@ -58,6 +59,12 @@ function getLanguageColor(language: string): string {
 export function ProjectCard({ repository }: ProjectCardProps) {
   const [owner, repoName] = repository.full_name.split('/');
 
+  const handleTitleClick = (e: React.MouseEvent) => {
+    // 在默认浏览器打开 GitHub 页面
+    OpenURL(repository.html_url);
+    // 同时也允许 React Router 导航（不阻止默认行为）
+  };
+
   return (
     <div className={classes.cardItem}>
       <Flex justify="space-between" align="flex-start" gap="md">
@@ -69,29 +76,34 @@ export function ProjectCard({ repository }: ProjectCardProps) {
             <Anchor
               component={Link}
               to={`/repo/${owner}/${repoName}`}
-              onClick={(e) => e.stopPropagation()}
+              onClick={handleTitleClick}
               fw={600}
               size="sm"
               className={classes.repoLink}
             >
               {repository.full_name}
             </Anchor>
-            <IconStar size={13} className={classes.starIcon} />
+            {/* 总星标数 */}
+            <IconStarFilled size={13} className={classes.starIcon} />
             <Text size="xs" c="var(--color-text-secondary)">
               {formatStars(repository.stargazers_count)}
             </Text>
+
           </Group>
 
           {/* 描述 */}
-          <Text size="sm" c="var(--color-text-secondary)" mb="sm" className={classes.description}>
+          <Text size="sm" c="var(--color-text-secondary)" className={classes.description}>
             {repository.description || 'No description provided'}
           </Text>
         </div>
 
-        <div style={{ color: '#707070', fontSize: '11px' }}>
-          + <IconStar size={10} /> {formatStars(repository.stargazers_count)}  
-        </div>
-         
+        {/* 新增星标数 */}
+        {(repository.stars_since && repository.stars_since > 0) ||
+         (repository.stars_today && repository.stars_today > 0) ? (
+          <Text size="xs" c="var(--color-text-secondary)">
+            +{repository.stars_since || repository.stars_today || 0} stars
+          </Text>
+        ) : null}
 
       </Flex>
     </div>

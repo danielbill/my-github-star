@@ -20,6 +20,9 @@ export namespace models {
 	    description: string;
 	    language: string;
 	    stargazers_count: number;
+	    stars_today: number;
+	    stars_since: number;
+	    forks_count: number;
 	    html_url: string;
 	    created_at: JSONDateTime;
 	    updated_at: JSONDateTime;
@@ -37,6 +40,9 @@ export namespace models {
 	        this.description = source["description"];
 	        this.language = source["language"];
 	        this.stargazers_count = source["stargazers_count"];
+	        this.stars_today = source["stars_today"];
+	        this.stars_since = source["stars_since"];
+	        this.forks_count = source["forks_count"];
 	        this.html_url = source["html_url"];
 	        this.created_at = this.convertValues(source["created_at"], JSONDateTime);
 	        this.updated_at = this.convertValues(source["updated_at"], JSONDateTime);

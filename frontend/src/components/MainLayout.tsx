@@ -154,7 +154,7 @@ export function MainLayout({
         </div>
       </header>
 
-      <main style={{ paddingTop: '60px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
+      <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '18px' }}>
           <div style={{ flex: 6 }}>
             {children}

@@ -18,6 +18,10 @@ export function Greet(arg1) {
   return window['go']['backend']['App']['Greet'](arg1);
 }
 
+export function OpenURL(arg1) {
+  return window['go']['backend']['App']['OpenURL'](arg1);
+}
+
 export function RefreshRepositories() {
   return window['go']['backend']['App']['RefreshRepositories']();
 }
