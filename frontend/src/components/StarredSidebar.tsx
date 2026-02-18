@@ -100,18 +100,7 @@ export function StarredSidebar() {
         <Text size="sm" fw={600} className={classes.headerTitle}>
           个人星标仓库 [{repositories.length}]
         </Text>
-        {/* <Tooltip label="刷新" position="bottom">
-          <ActionIcon
-            variant="subtle"
-            size={20}
-            radius="sm"
-            onClick={loadStarredRepos}
-            disabled={loading}
-            className={classes.refreshIcon}
-          >
-            <IconRefresh size={16} />
-          </ActionIcon>
-        </Tooltip> */}
+        
       </div>
 
       <ScrollArea flex={1}>

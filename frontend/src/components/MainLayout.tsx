@@ -170,72 +170,13 @@ export function MainLayout({
           position: 'relative',
         }}>
           <div style={{ width: 400, minWidth: 400 }}>
-            <Title order={4} c="#a0a0a0" style={{ margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+            <Title order={4} c="#6a7a90" style={{ margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
               GitHub Stars
             </Title>
           </div>
 
-          {/* Trend / News 链接 - 居中 */}
-          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1, display: 'flex', gap: '24px', alignItems: 'center' }}>
-            {/* Trend 链接 */}
-            <UnstyledButton
-              onClick={handleTrendClick}
-              style={{
-                color: currentPage === 'trend' ? '#ffffff' : '#6a7a90',
-                fontSize: '14px',
-                fontWeight: currentPage === 'trend' ? 500 : 400,
-                textDecoration: 'none',
-                cursor: 'pointer',
-                padding: '4px 12px',
-                borderRadius: '4px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (currentPage !== 'trend') {
-                  e.currentTarget.style.color = '#8a9ab0';
-                  e.currentTarget.style.backgroundColor = '#3f4b5c';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentPage !== 'trend') {
-                  e.currentTarget.style.color = '#6a7a90';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              Trend
-            </UnstyledButton>
-
-            {/* News 链接 */}
-            <UnstyledButton
-              onClick={handleNewsClick}
-              style={{
-                color: currentPage === 'news' ? '#ffffff' : '#6a7a90',
-                fontSize: '14px',
-                fontWeight: currentPage === 'news' ? 500 : 400,
-                textDecoration: 'none',
-                cursor: 'pointer',
-                padding: '4px 12px',
-                borderRadius: '4px',
-                transition: 'all 0.2s',
-              }}
-              onMouseEnter={(e) => {
-                if (currentPage !== 'news') {
-                  e.currentTarget.style.color = '#8a9ab0';
-                  e.currentTarget.style.backgroundColor = '#3f4b5c';
-                }
-              }}
-              onMouseLeave={(e) => {
-                if (currentPage !== 'news') {
-                  e.currentTarget.style.color = '#6a7a90';
-                  e.currentTarget.style.backgroundColor = 'transparent';
-                }
-              }}
-            >
-              News
-            </UnstyledButton>
-
-            {/* 时间切换（仅在 Trend 页显示） */}
+          {/* 时间切换 - 居中 */}
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
             {currentPage === 'trend' && (
               <SegmentedControl
                 data={timeRangeOptions}
@@ -244,12 +185,11 @@ export function MainLayout({
                 size="xs"
                 styles={{
                   root: {
-                    backgroundColor: '#3f4b5c',
-                    border: '1px solid #4a576a',
+                    backgroundColor: '#212830',
+                    border: '1px solid #4a576a99',
                     borderRadius: '4px',
                     padding: '2px',
                     height: '28px',
-                    marginLeft: '12px',
                   },
                   indicator: {
                     backgroundColor: '#4a576a',
@@ -258,7 +198,7 @@ export function MainLayout({
                     margin: '-1px',
                   },
                   label: {
-                    color: '#a0a0a0',
+                    color: '#6a7a90',
                     fontSize: '12px',
                     height: '100%',
                     display: 'flex',
@@ -273,40 +213,60 @@ export function MainLayout({
             )}
           </div>
 
-          <Flex gap="lg" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
-            {/* Trend 刷新按钮（仅在 Trend 页显示） */}
-            {currentPage === 'trend' && (
-              <>
-                <Tooltip label={`缓存时间: ${cacheTime || '未知'}`} position="bottom-end" withArrow>
-                  <ActionIcon
-                    variant="subtle"
-                    size="md"
-                    radius="sm"
-                    onClick={handleRefreshClick}
-                    disabled={refreshing}
-                    styles={{
-                      root: {
-                        backgroundColor: '#3f4b5c',
-                        color: refreshing ? '#6a7a90' : '#a0a0a0',
-                        '&:hover': {
-                          backgroundColor: '#4a576a',
-                        },
-                      },
-                    }}
-                  >
-                    <IconRefresh size={18} className={refreshing ? 'spin' : ''} />
-                  </ActionIcon>
-                </Tooltip>
-                {cacheTime && (
-                  <Text size="xs" c="#6a7a90">
-                    {cacheTime}
-                  </Text>
-                )}
-              </>
-            )}
+          <Flex gap="xs" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
+            {/* Trend 链接 */}
+            <UnstyledButton
+              onClick={handleTrendClick}
+              style={{
+                color: '#6a7a90',
+                fontSize: '14px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                transition: 'all 0.2s',
+                background: 'transparent',
+              }}
+            >
+              <span style={{
+                borderBottom: currentPage === 'trend' ? '2px solid #6a7a90' : '2px solid transparent',
+                paddingBottom: '2px',
+              }}>
+                Trend
+              </span>
+            </UnstyledButton>
 
-            {/* 日志按钮 */}
-            <Tooltip label="查看日志" position="bottom-end" withArrow>
+            {/* News 链接 */}
+            <UnstyledButton
+              onClick={handleNewsClick}
+              style={{
+                color: '#6a7a90',
+                fontSize: '14px',
+                fontWeight: 600,
+                textDecoration: 'none',
+                cursor: 'pointer',
+                padding: '4px 8px',
+                borderRadius: '4px',
+                transition: 'all 0.2s',
+                background: 'transparent',
+              }}
+            >
+              <span style={{
+                borderBottom: currentPage === 'news' ? '2px solid #6a7a90' : '2px solid transparent',
+                paddingBottom: '2px',
+              }}>
+                News
+              </span>
+            </UnstyledButton>
+
+            <div style={{ width: '100px' }} />
+
+      
+    
+
+            {/* 日志按钮 - 暂时隐藏 */}
+            {/* <Tooltip label="查看日志" position="bottom-end" withArrow>
               <ActionIcon
                 variant="subtle"
                 size="md"
@@ -324,16 +284,16 @@ export function MainLayout({
               >
                 <IconBug size={18} />
               </ActionIcon>
-            </Tooltip>
+            </Tooltip> */}
 
             {/* 用户登录/头像 */}
             {isLoggedIn && user ? (
-              <Menu shadow="md" width={200} position="bottom-end">
+              <Menu shadow="md" width={120} position="bottom-end">
                 <Menu.Target>
                   <UnstyledButton>
                     <Avatar
-                      radius="xl"
-                      size={30}
+                      radius="md"
+                      size={28}
                       src={user.avatar_url}
                       alt={user.login}
                       style={{ cursor: 'pointer' }}
@@ -342,23 +302,16 @@ export function MainLayout({
                 </Menu.Target>
 
                 <Menu.Dropdown>
-                  <Menu.Label>
-                    <Text size="sm" weight={500}>{user.name || user.login}</Text>
-                    <Text size="xs" c="dimmed">@{user.login}</Text>
-                  </Menu.Label>
-
-                  <Menu.Divider />
-
-                  <Menu.Item
-                    leftSection={<IconUser size={14} />}
+                  <Menu.Item    
+                    color="gray"
                     onClick={() => window.open(`https://github.com/${user.login}`, '_blank')}
                   >
-                    GitHub 主页
+                    GitHub主页
                   </Menu.Item>
 
                   <Menu.Item
                     leftSection={<IconLogout size={14} />}
-                    color="red"
+                    color="gray"
                     onClick={handleLogoutClick}
                   >
                     登出
@@ -446,7 +399,7 @@ export function MainLayout({
             maxWidth: 400,
             zIndex: 2000,
           }}
-          withClose
+          withCloseButton
           onClose={() => setLoginError(null)}
         >
           {loginError}
