@@ -5,9 +5,28 @@ import {
   ActionIcon,
   Avatar,
   SegmentedControl,
+  Menu,
+  Text,
+  UnstyledButton,
+  Tooltip,
+  Modal,
+  Stack,
+  Group,
+  Button,
+  Code,
+  Alert,
 } from '@mantine/core';
-import { IconBrandGithub, IconRefresh } from '@tabler/icons-react';
+import {
+  IconBrandGithub,
+  IconRefresh,
+  IconLogout,
+  IconUser,
+  IconAlertCircle,
+  IconKey,
+  IconDeviceDesktop,
+} from '@tabler/icons-react';
 import { TimeRange, LanguageFilter } from '../types';
+import { useAuth } from '../hooks/useAuth';
 
 type ViewScope = 'all' | 'mine';
 
@@ -54,12 +73,55 @@ export function MainLayout({
   lastUpdate,
 }: MainLayoutProps) {
   const [viewScope, setViewScope] = useState<ViewScope>('all');
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [loginError, setLoginError] = useState<string | null>(null);
+  const [loginModalOpen, setLoginModalOpen] = useState(false);
+  const {
+    isLoggedIn,
+    user,
+    isLoading: authLoading,
+    deviceFlowInfo,
+    setDeviceFlowInfo,
+    loginWithOAuth,
+    loginWithDeviceFlow,
+    logout,
+  } = useAuth();
 
   const handleTimeRangeChange = (value: string | string[]) => {
     const newValue = Array.isArray(value) ? value[0] : value;
     if (newValue === 'weekly' || newValue === 'monthly') {
       onTimeRangeChange(newValue as 'weekly' | 'monthly');
+    }
+  };
+
+  const handleLoginOAuth = async () => {
+    try {
+      setLoginError(null);
+      setLoginModalOpen(false);
+      await loginWithOAuth();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('OAuth 登录失败:', errorMsg);
+      setLoginError(errorMsg);
+      setLoginModalOpen(true);
+    }
+  };
+
+  const handleLoginDeviceFlow = async () => {
+    try {
+      setLoginError(null);
+      await loginWithDeviceFlow();
+    } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      console.error('Device Flow 登录失败:', errorMsg);
+      setLoginError(errorMsg);
+    }
+  };
+
+  const handleLogoutClick = async () => {
+    try {
+      await logout();
+    } catch (error) {
+      console.error('登出失败:', error);
     }
   };
 
@@ -91,7 +153,7 @@ export function MainLayout({
             GitHub Stars
           </Title>
 
-          <Flex gap="lg" align="center">          
+          <Flex gap="lg" align="center">
 
             {/* 时间切换 */}
             <SegmentedControl
@@ -129,36 +191,187 @@ export function MainLayout({
             />
 
             {/* 用户登录/头像 */}
-            {isLoggedIn ? (
-              <Avatar
-                radius="xl"
-                size={30}
-                src="/avatar-placeholder.png"
-                alt="User"
-                style={{ cursor: 'pointer' }}
-              />
+            {isLoggedIn && user ? (
+              <Menu shadow="md" width={200} position="bottom-end">
+                <Menu.Target>
+                  <UnstyledButton>
+                    <Avatar
+                      radius="xl"
+                      size={30}
+                      src={user.avatar_url}
+                      alt={user.login}
+                      style={{ cursor: 'pointer' }}
+                    />
+                  </UnstyledButton>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Label>
+                    <Text size="sm" weight={500}>{user.name || user.login}</Text>
+                    <Text size="xs" c="dimmed">@{user.login}</Text>
+                  </Menu.Label>
+
+                  <Menu.Divider />
+
+                  <Menu.Item
+                    leftSection={<IconUser size={14} />}
+                    onClick={() => window.open(`https://github.com/${user.login}`, '_blank')}
+                  >
+                    GitHub 主页
+                  </Menu.Item>
+
+                  <Menu.Item
+                    leftSection={<IconLogout size={14} />}
+                    color="red"
+                    onClick={handleLogoutClick}
+                  >
+                    登出
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
             ) : (
-              <ActionIcon
-                variant="subtle"
-                size="md"
-                radius="sm"
-                onClick={() => setIsLoggedIn(true)}
-                styles={{
-                  root: {
-                    backgroundColor: '#3f4b5c',
-                    color: '#a0a0a0',
-                    '&:hover': {
-                      backgroundColor: '#4a576a',
+              <Tooltip label="点击登录" position="bottom-end" withArrow>
+                <ActionIcon
+                  variant="subtle"
+                  size="md"
+                  radius="sm"
+                  onClick={() => setLoginModalOpen(true)}
+                  loading={authLoading}
+                  styles={{
+                    root: {
+                      backgroundColor: '#3f4b5c',
+                      color: '#a0a0a0',
+                      '&:hover': {
+                        backgroundColor: '#4a576a',
+                      },
                     },
-                  },
-                }}
-              >
-                <IconBrandGithub size={20} />
-              </ActionIcon>
+                  }}
+                >
+                  <IconBrandGithub size={20} />
+                </ActionIcon>
+              </Tooltip>
             )}
           </Flex>
         </div>
       </header>
+
+      {/* 登录方式选择模态框 */}
+      <Modal
+        opened={loginModalOpen}
+        onClose={() => {
+          setLoginModalOpen(false);
+          setLoginError(null);
+          setDeviceFlowInfo(null);
+        }}
+        title={<Text size="lg" weight={500}>选择登录方式</Text>}
+        centered
+        overlayProps={{ backgroundOpacity: 0.5 }}
+      >
+        <Stack gap="md">
+          {loginError && (
+            <Alert color="red" icon={<IconAlertCircle size={16} />} withClose onClose={() => setLoginError(null)}>
+              {loginError}
+            </Alert>
+          )}
+
+          {deviceFlowInfo ? (
+            // Device Flow 验证码显示
+            <Stack gap="lg" align="center">
+              <Text size="sm" c="dimmed">请在浏览器中输入以下验证码：</Text>
+
+              <Code
+                style={{
+                  fontSize: '32px',
+                  letterSpacing: '8px',
+                  fontWeight: 'bold',
+                  padding: '16px 32px',
+                  backgroundColor: '#2d333b',
+                }}
+              >
+                {deviceFlowInfo.user_code}
+              </Code>
+
+              <Text size="sm" c="dimmed">验证页面已在浏览器中打开</Text>
+
+              <Group gap="xs">
+                <Text size="xs" c="dimmed">未打开？</Text>
+                <Button
+                  size="xs"
+                  variant="subtle"
+                  leftSection={<IconBrandGithub size={14} />}
+                  onClick={() => window.open('https://github.com/login/device', '_blank')}
+                >
+                  打开验证页面
+                </Button>
+              </Group>
+
+              <Button
+                fullWidth
+                variant="light"
+                color="gray"
+                onClick={() => {
+                  setDeviceFlowInfo(null);
+                }}
+              >
+                返回选择其他方式
+              </Button>
+            </Stack>
+          ) : (
+            // 登录方式选择
+            <Stack gap="sm">
+              <Button
+                size="lg"
+                leftSection={<IconDeviceDesktop size={20} />}
+                onClick={handleLoginDeviceFlow}
+                styles={{
+                  root: {
+                    backgroundColor: '#238636',
+                    height: '60px',
+                    '&:hover': {
+                      backgroundColor: '#2ea043',
+                    },
+                  },
+                  label: {
+                    fontSize: '16px',
+                    fontWeight: 500,
+                  },
+                }}
+              >
+                <Stack gap={4}>
+                  <Text>方式 1：设备码登录（推荐）</Text>
+                  <Text size="xs" c="rgba(255,255,255,0.7)">无需 Client Secret，只需输入验证码</Text>
+                </Stack>
+              </Button>
+
+              <Button
+                size="lg"
+                variant="light"
+                leftSection={<IconKey size={20} />}
+                onClick={handleLoginOAuth}
+                styles={{
+                  root: {
+                    height: '60px',
+                    border: '1px solid #4a576a',
+                    color: '#a0a0a0',
+                    '&:hover': {
+                      backgroundColor: '#3f4b5c',
+                    },
+                  },
+                  label: {
+                    fontSize: '16px',
+                    fontWeight: 500,
+                  },
+                }}
+              >
+                <Stack gap={4}>
+                  <Text>方式 2：OAuth 授权登录</Text>
+                  <Text size="xs" c="dimmed">需要配置 Client Secret</Text>
+                </Stack>
+              </Button>
+            </Stack>
+          )}
+        </Stack>
+      </Modal>
 
       <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '18px' }}>
@@ -166,7 +379,7 @@ export function MainLayout({
             {children}
           </div>
           <div style={{ flex: 4 }}>
-            {/* 我的列表 */}
+            {/* 我的列表 - 登录后显示 */}
           </div>
         </div>
       </main>

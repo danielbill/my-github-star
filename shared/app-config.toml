@@ -1,0 +1,18 @@
+# GitHub OAuth 配置
+# 请访问 https://github.com/settings/developers 创建 OAuth App
+# 只需要 Client ID，无需 Client Secret（使用设备码登录方式）
+
+[github]
+client_id = ""
+
+[preferences]
+# 登录方式: "device" (设备码登录，推荐) 或 "oauth" (OAuth 授权码登录)
+login_method = "device"
+
+[auth]
+# 登录后自动填充，无需手动填写
+access_token = ""
+user_id = 0
+login = ""
+name = ""
+avatar_url = ""

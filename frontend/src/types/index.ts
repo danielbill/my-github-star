@@ -15,6 +15,42 @@ export interface Repository {
   updated_at: string;
 }
 
+// GitHub 用户信息类型
+export interface GitHubUser {
+  id: number;
+  login: string;
+  name: string;
+  email: string;
+  avatar_url: string;
+  bio: string;
+  location: string;
+  blog: string;
+  company: string;
+  public_repos: number;
+  followers: number;
+  following: number;
+  created_at: string;
+  updated_at: string;
+}
+
+// 认证状态类型
+export interface AuthState {
+  isLoggedIn: boolean;
+  user: GitHubUser | null;
+  isLoading: boolean;
+}
+
+// Device Flow 登录信息
+export interface DeviceFlowInfo {
+  user_code: string;
+  verification_uri: string;
+  expires_in: number;
+  interval: number;
+}
+
+// 登录方式类型
+export type LoginMethod = 'oauth' | 'device';
+
 // API 响应类型
 export interface ApiResponse<T> {
   success: boolean;

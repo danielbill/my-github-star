@@ -6,26 +6,70 @@ export function GetCachedRepositories() {
   return window['go']['backend']['App']['GetCachedRepositories']();
 }
 
+export function GetCurrentUser() {
+  return window['go']['backend']['App']['GetCurrentUser']();
+}
+
+export function GetLoginMethod() {
+  return window['go']['backend']['App']['GetLoginMethod']();
+}
+
 export function GetRepositoryByID(arg1, arg2) {
   return window['go']['backend']['App']['GetRepositoryByID'](arg1, arg2);
+}
+
+export function GetStarredRepositories() {
+  return window['go']['backend']['App']['GetStarredRepositories']();
 }
 
 export function GetTrendingRepositories(arg1, arg2) {
   return window['go']['backend']['App']['GetTrendingRepositories'](arg1, arg2);
 }
 
+export function GetUserRepositories() {
+  return window['go']['backend']['App']['GetUserRepositories']();
+}
+
 export function Greet(arg1) {
   return window['go']['backend']['App']['Greet'](arg1);
+}
+
+export function IsLoggedIn() {
+  return window['go']['backend']['App']['IsLoggedIn']();
+}
+
+export function Logout() {
+  return window['go']['backend']['App']['Logout']();
 }
 
 export function OpenURL(arg1) {
   return window['go']['backend']['App']['OpenURL'](arg1);
 }
 
+export function OpenVerificationURL() {
+  return window['go']['backend']['App']['OpenVerificationURL']();
+}
+
 export function RefreshRepositories() {
   return window['go']['backend']['App']['RefreshRepositories']();
 }
 
+export function SetGitHubConfig(arg1, arg2) {
+  return window['go']['backend']['App']['SetGitHubConfig'](arg1, arg2);
+}
+
+export function SetLoginMethod(arg1) {
+  return window['go']['backend']['App']['SetLoginMethod'](arg1);
+}
+
 export function Shutdown(arg1) {
   return window['go']['backend']['App']['Shutdown'](arg1);
+}
+
+export function StartDeviceFlowLogin() {
+  return window['go']['backend']['App']['StartDeviceFlowLogin']();
+}
+
+export function StartLogin() {
+  return window['go']['backend']['App']['StartLogin']();
 }
