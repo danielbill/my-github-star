@@ -28,8 +28,11 @@ func NewDB(sharedDir string) (*DB, error) {
 		return nil, fmt.Errorf("创建数据库目录失败: %w", err)
 	}
 
-	// 打开数据库连接
-	db, err := gorm.Open(sqlite.Open(dbPath), &gorm.Config{
+	// 打开数据库连接，使用纯 Go SQLite 驱动
+	db, err := gorm.Open(sqlite.Dialector{
+		DriverName: "sqlite",
+		DSN:        dbPath,
+	}, &gorm.Config{
 		Logger: logger.Default.LogMode(logger.Silent),
 	})
 	if err != nil {

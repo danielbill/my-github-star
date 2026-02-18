@@ -7,21 +7,21 @@ My GitHub Star  是一个使用 Wails v2 构建的桌面应用程序，用于展
 ## 技术栈
 
 ### 后端 (Go)
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| Go | 1.23 | 后端语言 |
-| Wails | v2.11.0 | 桌面应用框架 |
-| GitHub Search API | - | 获取趋势仓库数据 |
+| 技术              | 版本    | 说明             |
+| ----------------- | ------- | ---------------- |
+| Go                | 1.23    | 后端语言         |
+| Wails             | v2.11.0 | 桌面应用框架     |
+| GitHub Search API | -       | 获取趋势仓库数据 |
 
 ### 前端 (React + TypeScript)
-| 技术 | 版本 | 说明 |
-|------|------|------|
-| React | 18.2.0 | UI 框架 |
-| TypeScript | 5.9.3 | 类型系统 |
-| Mantine UI | 8.3.15 | 组件库 |
+| 技术         | 版本   | 说明     |
+| ------------ | ------ | -------- |
+| React        | 18.2.0 | UI 框架  |
+| TypeScript   | 5.9.3  | 类型系统 |
+| Mantine UI   | 8.3.15 | 组件库   |
 | React Router | 7.13.0 | 路由管理 |
-| Vite | 3.0.7 | 构建工具 |
-| Tabler Icons | 3.36.1 | 图标库 |
+| Vite         | 3.0.7  | 构建工具 |
+| Tabler Icons | 3.36.1 | 图标库   |
 
 ---
 
@@ -107,6 +107,7 @@ cd frontend && npm run build
 2. **类型一致**：前端 `types/index.ts` 中的 `Repository` 接口需与 Go 模型保持一致
 3. **字段命名**：Go 结构体字段名与 JSON 标签保持一致（如 `StargazersCount` / `stargazers_count`）
 4. **热重载**：开发模式下前端修改会自动刷新，Go 修改需要重启，AI不要反复关闭重启服务！
+5. **测试脚本**：测试脚本统一放在 tests/目录下
 
 ---
 
@@ -114,28 +115,28 @@ cd frontend && npm run build
 
 ### 已完成 ✅
 
-| 功能 | 状态 |
-|------|------|
-| 项目脚手架 | ✅ |
-| GitHub Search API 集成 | ✅ |
-| 趋势仓库列表展示 | ✅ |
-| 按编程语言筛选 | ✅ |
-| 按时间范围筛选（日/周/月） | ✅ |
-| 项目详情页 | ✅ |
-| 页面路由（列表 ↔ 详情） | ✅ |
-| 返回列表功能 | ✅ |
-| 在 GitHub 中打开 | ✅ |
-| 代码结构对齐 plan | ✅ |
+| 功能                       | 状态 |
+| -------------------------- | ---- |
+| 项目脚手架                 | ✅    |
+| GitHub Search API 集成     | ✅    |
+| 趋势仓库列表展示           | ✅    |
+| 按编程语言筛选             | ✅    |
+| 按时间范围筛选（日/周/月） | ✅    |
+| 项目详情页                 | ✅    |
+| 页面路由（列表 ↔ 详情）    | ✅    |
+| 返回列表功能               | ✅    |
+| 在 GitHub 中打开           | ✅    |
+| 代码结构对齐 plan          | ✅    |
 
 ### 待实现 📋
 
-| 功能 | 优先级 |
-|------|--------|
-| 数据持久化（本地缓存） | 中 |
-| GitHub OAuth 登录 | 低 |
-| AI 项目摘要 | 低 |
-| Star 增长图表 | 低 |
-| 新闻和视频搜索 | 低 |
+| 功能                   | 优先级 |
+| ---------------------- | ------ |
+| 数据持久化（本地缓存） | 中     |
+| GitHub OAuth 登录      | 低     |
+| AI 项目摘要            | 低     |
+| Star 增长图表          | 低     |
+| 新闻和视频搜索         | 低     |
 
 ---
 
@@ -143,12 +144,12 @@ cd frontend && npm run build
 
 ### 后端方法（Wails 绑定）
 
-| 方法 | 参数 | 返回值 | 说明 |
-|------|------|--------|------|
+| 方法                                       | 参数                            | 返回值                | 说明             |
+| ------------------------------------------ | ------------------------------- | --------------------- | ---------------- |
 | `GetTrendingRepositories(language, since)` | language: string, since: string | `[]models.Repository` | 获取趋势仓库列表 |
-| `RefreshRepositories()` | - | `[]models.Repository` | 刷新（默认参数） |
-| `GetCachedRepositories()` | - | `[]models.Repository` | 获取缓存数据 |
-| `GetRepositoryByID(owner, repo)` | owner: string, repo: string | `*models.Repository` | 获取单个仓库详情 |
+| `RefreshRepositories()`                    | -                               | `[]models.Repository` | 刷新（默认参数） |
+| `GetCachedRepositories()`                  | -                               | `[]models.Repository` | 获取缓存数据     |
+| `GetRepositoryByID(owner, repo)`           | owner: string, repo: string     | `*models.Repository`  | 获取单个仓库详情 |
 
 ### 数据模型
 
@@ -172,9 +173,9 @@ type Repository struct {
 
 ## 路由结构
 
-| 路径 | 组件 | 说明 |
-|------|------|------|
-| `/` | `ProjectList` | 项目列表页 |
+| 路径                 | 组件            | 说明       |
+| -------------------- | --------------- | ---------- |
+| `/`                  | `ProjectList`   | 项目列表页 |
 | `/repo/:owner/:name` | `ProjectDetail` | 项目详情页 |
 
 ---
