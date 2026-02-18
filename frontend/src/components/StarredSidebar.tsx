@@ -30,22 +30,29 @@ function StarredRepoItem({ repository }: StarredRepoItemProps) {
 
   return (
     <div className={classes.repoItem}>
-      <Group gap="xs" align="center" wrap="nowrap" mb="xs">
-        <IconBrandGithub size={16} className={classes.repoIcon} />
-        <Anchor
-          href={repository.html_url}
-          onClick={handleTitleClick}
-          fw={600}
-          size="sm"
-          className={classes.repoLink}
-          lineClamp={1}
-        >
-          {repository.full_name}
-        </Anchor>
-        <IconStarFilled size={13} className={classes.starIcon} />
-        <Text size="xs" c="var(--color-text-secondary)">
-          {formatStars(repository.stargazers_count)}
-        </Text>
+      <Group gap="xs" align="center" justify="space-between" wrap="nowrap" mb="xs">
+        <Group gap="xs" align="center" wrap="nowrap">
+          <IconBrandGithub size={16} className={classes.repoIcon} />
+          <Anchor
+            href={repository.html_url}
+            onClick={handleTitleClick}
+            fw={600}
+            size="sm"
+            className={classes.repoLink}
+            lineClamp={1}
+          >
+            {repository.full_name}
+          </Anchor>
+          <IconStarFilled size={13} className={classes.starIcon} />
+          <Text size="xs" c="var(--color-text-secondary)">
+            {formatStars(repository.stargazers_count)}
+          </Text>
+        </Group>
+        {repository.stars_since && repository.stars_since > 0 && (
+          <Text size="xs" c="var(--color-text-secondary)">
+            +{formatStars(repository.stars_since)}
+          </Text>
+        )}
       </Group>
     </div>
   );

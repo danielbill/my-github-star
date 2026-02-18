@@ -182,9 +182,17 @@ func (d *DB) SaveUserStarRepos(repos []UserStarRepo) error {
 }
 
 // GetUserStarRepos 获取用户星标仓库列表
+// 排序规则：stars_since 从高到低，为 0 则按 stargazers_count 排序
 func (d *DB) GetUserStarRepos() ([]UserStarRepo, error) {
 	var repos []UserStarRepo
-	if err := d.db.Order("stargazers_count DESC").Find(&repos).Error; err != nil {
+	// 使用 CASE 语句：stars_since > 0 时按 stars_since 排序，否则按 stargazers_count 排序
+	if err := d.db.Order(`
+		CASE 
+			WHEN stars_since > 0 THEN stars_since 
+			ELSE 0 
+		END DESC, 
+		stargazers_count DESC
+	`).Find(&repos).Error; err != nil {
 		return nil, err
 	}
 	return repos, nil
