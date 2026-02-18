@@ -24,7 +24,8 @@ wails build
 ```
 
 ### 测试
-项目目前没有测试。
+
+测试脚本统一存放 tests/
 
 ## 架构
 
@@ -69,3 +70,5 @@ wails build
 
 ### 语言筛选
 语言选项在 `MainLayout.tsx` 中硬编码。要添加新语言，在 `languageOptions` 数组中添加，并可选地在 `ProjectCard.tsx` 的 `languageColors` 中添加颜色。
+
+

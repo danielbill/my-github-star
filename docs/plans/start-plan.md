@@ -1,178 +1,355 @@
-# GitHub Star Tracking Desktop Application - Implementation Plan (Basic MVP)
+# GitHub Star 追踪桌面应用 - 实施计划（基础 MVP）
 
-## Context
+  
 
-Build a desktop application to track GitHub community dynamics, discover rapidly rising new projects, and monitor the growth rate of starred projects. The app will use Wails v2 framework combining Go backend with React + Mantine frontend.
+## 背景
 
-**Initial Scope**: Basic MVP - Focus on core GitHub data fetching and display without AI summaries or OAuth initially.
+  
 
-## Technology Stack
+构建一个桌面应用程序，用于追踪 GitHub 社区动态，发现快速崛起的新项目，并监控关注项目的星标增长速率。应用使用 Wails v2 框架，结合 Go 后端和 React + Mantine 前端。
 
-| Layer | Technology |
-|-------|-----------|
-| **Framework** | Wails v2 (Go + React binding) |
-| **Backend** | Go 1.21+, google/go-github SDK |
-| **Frontend** | React 18, TypeScript, Mantine UI, Vite |
-| **Platform** | Windows desktop app (.exe) |
+  
 
-## Implementation Plan (Basic MVP)
+**初始范围**：基础 MVP - 专注于核心 GitHub 数据获取和展示，暂不包含 AI 摘要和 OAuth 登录。
 
-### Phase 1: Project Scaffolding
+  
 
-1. **Initialize Wails project**
-   - Install Wails CLI: `go install github.com/wailsapp/wails/v2/cmd/wails@latest`
-   - Create project: `wails init -n my-github-star -t react`
-   - Install Mantine UI: `npm install @mantine/core @mantine/hooks @emotion/react`
+## 技术栈
 
-2. **Project structure**
-   ```
-   my-github-star/
-   ├── frontend/           # React + Mantine frontend
-   │   ├── src/
-   │   │   ├── components/ # UI components
-   │   │   │   ├── ProjectList.tsx
-   │   │   │   ├── ProjectCard.tsx
-   │   │   │   └── MainLayout.tsx
-   │   │   ├── types/      # TypeScript interfaces
-   │   │   └── App.tsx
-   ├── backend/            # Go services
-   │   ├── main.go         # Wails entry point
-   │   ├── github/         # GitHub API service
-   │   └── models/         # Data models
-   └── wails.json          # Wails config
-   ```
+  
 
-### Phase 2: Backend Services (Go) - MVP Scope
+| 层级 | 技术 |
 
-#### 2.1 GitHub Data Service (`backend/github/service.go`)
-- Fetch trending repositories from GitHub Trending API
-- Parse repository data (name, stars, description, language, owner)
-- Calculate simple star growth metrics (daily/weekly comparison)
+|------|------|
 
-#### 2.2 Data Models (`backend/models/repository.go`)
+| **框架** | Wails v2 (Go + React 绑定) |
+
+| **后端** | Go 1.21+, google/go-github SDK |
+
+| **前端** | React 18, TypeScript, Mantine UI, Vite |
+
+| **平台** | Windows 桌面应用 (.exe) |
+
+  
+
+## 实施计划
+
+  
+
+### 第一阶段：项目脚手架
+
+  
+
+1. **初始化 Wails 项目**
+
+   - 安装 Wails CLI：`go install github.com/wailsapp/wails/v2/cmd/wails@latest`
+
+   - 创建项目：`wails init -n my-github-star -t react`
+
+   - 安装 Mantine UI：`npm install @mantine/core @mantine/hooks @emotion/react`
+
+  
+
+2. **项目结构**
+
+   ```
+
+   my-github-star/
+
+   ├── frontend/           # React + Mantine 前端
+
+   │   ├── src/
+
+   │   │   ├── components/ # UI 组件
+
+   │   │   │   ├── ProjectList.tsx    # 项目列表
+
+   │   │   │   ├── ProjectCard.tsx    # 项目卡片
+
+   │   │   │   └── MainLayout.tsx     # 主布局
+
+   │   │   ├── types/      # TypeScript 接口
+
+   │   │   └── App.tsx     # 主应用组件
+
+   ├── backend/            # Go 服务
+
+   │   ├── main.go         # Wails 入口
+
+   │   ├── github/         # GitHub API 服务
+
+   │   └── models/         # 数据模型
+
+   └── wails.json          # Wails 配置
+
+   ```
+
+  
+
+### 第二阶段：后端服务（Go）- MVP 范围
+
+  
+
+#### 2.1 GitHub 数据服务 (`backend/github/service.go`)
+
+- 从 GitHub Trending API 获取趋势仓库
+
+- 解析仓库数据（名称、星标数、描述、语言、所有者）
+
+- 计算简单的星标增长指标（每日/每周对比）
+
+  
+
+#### 2.2 数据模型 (`backend/models/repository.go`)
+
 ```go
+
 type Repository struct {
-    ID          int64
-    Name        string
-    FullName    string
-    Owner       string
-    Description string
-    Language    string
-    Stars       int
-    URL         string
-    CreatedAt   time.Time
-    UpdatedAt   time.Time
+
+    ID          int64
+
+    Name        string        // 仓库名称
+
+    FullName    string        // 完整名称 (owner/repo)
+
+    Owner       string        // 所有者
+
+    Description string        // 描述
+
+    Language    string        // 主要编程语言
+
+    Stars       int           // 星标数量
+
+    URL         string        // GitHub 链接
+
+    CreatedAt   time.Time     // 创建时间
+
+    UpdatedAt   time.Time     // 更新时间
+
 }
+
 ```
 
-#### 2.3 Basic Configuration (`backend/config/config.go`)
-- Load GitHub API token from environment or config file
-- Cache settings for API requests
+  
 
-### Phase 3: Frontend Components (React + Mantine) - MVP Scope
+#### 2.3 基础配置 (`backend/config/config.go`)
 
-#### 3.1 Main Layout (`frontend/src/components/MainLayout.tsx`)
-- Mantine AppShell with header
-- Refresh button to reload trending projects
-- Basic responsive layout
+- 从环境变量或配置文件加载 GitHub API Token
 
-#### 3.2 Project List (`frontend/src/components/ProjectList.tsx`)
-- Display projects as cards or list
-- Show: name, stars, description, language, owner
-- Simple sorting (by stars, name)
+- API 请求的缓存设置
 
-#### 3.3 Project Card (`frontend/src/components/ProjectCard.tsx`)
-- Individual project display
-- Click to open GitHub repository
-- Badge for programming language
+  
 
-### Phase 4: Integration (MVP)
+### 第三阶段：前端组件（React + Mantine）- MVP 范围
 
-#### 4.1 Wails Binding (`backend/main.go`)
+  
+
+#### 3.1 主布局 (`frontend/src/components/MainLayout.tsx`)
+
+- Mantine AppShell 布局
+
+- 顶部栏带刷新按钮
+
+- 基础响应式布局
+
+  
+
+#### 3.2 项目列表 (`frontend/src/components/ProjectList.tsx`)
+
+- 以卡片或列表形式展示项目
+
+- 显示：名称、星标数、描述、语言、所有者
+
+- 简单排序（按星标数、名称）
+
+  
+
+#### 3.3 项目卡片 (`frontend/src/components/ProjectCard.tsx`)
+
+- 单个项目展示
+
+- 点击打开 GitHub 仓库
+
+- 编程语言徽章
+
+  
+
+### 第四阶段：集成（MVP）
+
+  
+
+#### 4.1 Wails 绑定 (`backend/main.go`)
+
 ```go
-// Core Go functions to expose
+
+// 暴露给前端的 Go 函数
+
 func (a *App) GetTrendingRepositories(period string) ([]Repository, error)
+
 func (a *App) RefreshRepositories() ([]Repository, error)
+
 ```
 
-#### 4.2 TypeScript Types (`frontend/src/types/index.ts`)
+  
+
+#### 4.2 TypeScript 类型定义 (`frontend/src/types/index.ts`)
+
 ```typescript
+
 export interface Repository {
-    id: number;
-    name: string;
-    fullName: string;
-    owner: string;
-    description: string;
-    language: string;
-    stars: number;
-    url: string;
+
+    id: number;
+
+    name: string;
+
+    fullName: string;
+
+    owner: string;
+
+    description: string;
+
+    language: string;
+
+    stars: number;
+
+    url: string;
+
 }
+
 ```
 
-### Phase 5: Build & Package
+  
 
-- Configure `wails.json` for Windows build
-- Test build with `wails dev`
-- Generate Windows `.exe` with `wails build`
+### 第五阶段：构建打包
 
-## MVP Scope - What's Included
+  
 
-| Feature | Status |
-|---------|--------|
-| GitHub Trending API fetch | ✅ Include |
-| Project list display | ✅ Include |
-| Star count & basic info | ✅ Include |
-| Refresh button | ✅ Include |
-| Language badges | ✅ Include |
-| GitHub repository links | ✅ Include |
-| Sorting (stars, name) | ✅ Include |
-| GitHub OAuth login | ❌ Future |
-| AI summaries | ❌ Future |
-| News search | ❌ Future |
-| Star growth charts | ❌ Future |
-| Watched projects tracking | ❌ Future |
+- 配置 `wails.json` 用于 Windows 构建
 
-## Critical Files to Create (MVP)
+- 使用 `wails dev` 测试开发模式
 
-| File | Purpose |
-|------|---------|
-| `backend/main.go` | Wails app entry point, Go bindings for GetTrendingRepositories |
-| `backend/github/service.go` | GitHub Trending API integration |
-| `backend/models/repository.go` | Repository data model |
-| `frontend/src/App.tsx` | Main React component with Mantine provider |
-| `frontend/src/components/MainLayout.tsx` | AppShell layout with header |
-| `frontend/src/components/ProjectList.tsx` | Project list with Grid/Stack |
-| `frontend/src/components/ProjectCard.tsx` | Individual project card |
-| `frontend/src/types/index.ts` | TypeScript interfaces |
+- 使用 `wails build` 生成 Windows `.exe`
 
-## Verification Plan
+  
 
-1. **Development Mode**: Run `wails dev` and verify:
-   - Trending repositories load successfully
-   - Projects display correctly in UI
-   - Refresh button works
-   - Clicking project opens GitHub URL
+## MVP 范围 - 包含功能
 
-2. **Build Test**: Run `wails build` and verify:
-   - `.exe` file is generated
-   - Application launches correctly
-   - All features work in standalone mode
+  
 
-## Next Steps
+| 功能 | 状态 |
 
-1. Initialize Wails project with React template
-2. Install and configure Mantine UI
-3. Implement GitHub Trending service (Go)
-4. Build frontend components (MainLayout, ProjectList, ProjectCard)
-5. Connect frontend to Go backend via Wails bindings
-6. Test with `wails dev`
-7. Build Windows executable with `wails build`
+|------|------|
 
-## Future Enhancements (Post-MVP)
+| GitHub Trending API 获取 | ✅ 包含 |
 
-- GitHub OAuth login for private API access
-- AI-powered project summaries
-- Star growth rate charts and analytics
-- News and video search integration
-- Watched/starred projects tracking
-- Periodic refresh with notifications
+| 项目列表展示 | ✅ 包含 |
+
+| 星标数和基础信息 | ✅ 包含 |
+
+| 刷新按钮 | ✅ 包含 |
+
+| 编程语言徽章 | ✅ 包含 |
+
+| GitHub 仓库链接 | ✅ 包含 |
+
+| 排序（星标、名称） | ✅ 包含 |
+
+| GitHub OAuth 登录 | ❌ 后续 |
+
+| AI 摘要 | ❌ 后续 |
+
+| 新闻搜索 | ❌ 后续 |
+
+| 星标增长图表 | ❌ 后续 |
+
+| 关注项目追踪 | ❌ 后续 |
+
+  
+
+## 需要创建的关键文件（MVP）
+
+  
+
+| 文件 | 用途 |
+
+|------|------|
+
+| `backend/main.go` | Wails 入口，GetTrendingRepositories 绑定 |
+
+| `backend/github/service.go` | GitHub Trending API 集成 |
+
+| `backend/models/repository.go` | 仓库数据模型 |
+
+| `frontend/src/App.tsx` | 主 React 组件，Mantine Provider |
+
+| `frontend/src/components/MainLayout.tsx` | AppShell 布局和头部 |
+
+| `frontend/src/components/ProjectList.tsx` | 项目列表（Grid/Stack） |
+
+| `frontend/src/components/ProjectCard.tsx` | 单个项目卡片 |
+
+| `frontend/src/types/index.ts` | TypeScript 接口定义 |
+
+  
+
+## 验证计划
+
+  
+
+1. **开发模式**：运行 `wails dev` 并验证：
+
+   - 趋势仓库成功加载
+
+   - 项目在 UI 中正确显示
+
+   - 刷新按钮正常工作
+
+   - 点击项目打开 GitHub URL
+
+  
+
+2. **构建测试**：运行 `wails build` 并验证：
+
+   - `.exe` 文件成功生成
+
+   - 应用程序正常启动
+
+   - 所有功能在独立模式下正常工作
+
+  
+
+## 后续步骤
+
+  
+
+1. 使用 React 模板初始化 Wails 项目
+
+2. 安装并配置 Mantine UI
+
+3. 实现 GitHub Trending 服务（Go）
+
+4. 构建前端组件（MainLayout、ProjectList、ProjectCard）
+
+5. 通过 Wails 绑定连接前端和 Go 后端
+
+6. 使用 `wails dev` 测试
+
+7. 使用 `wails build` 构建 Windows 可执行文件
+
+  
+
+## 未来增强功能（MVP 之后）
+
+  
+
+- GitHub OAuth 登录以访问私有 API
+
+- AI 驱动的项目摘要
+
+- 星标增长率图表和分析
+
+- 新闻和视频搜索集成
+
+- 关注/星标项目追踪
+
+- 定期刷新和通知

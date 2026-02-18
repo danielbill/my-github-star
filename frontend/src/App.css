@@ -1,4 +1,40 @@
+/* 全局颜色变量 */
+:root {
+  /* 背景色 - 统一深色 */
+  --color-bg-primary: #212830;
+  --color-bg-secondary: #2a333f;
+  --color-bg-tertiary: #343e4d;
+  --color-bg-elevated: #3f4b5c;
+
+  /* 边框色 */
+  --color-border-default: #3f4b5c;
+  --color-border-muted: #4a576a;
+  --color-border-accent: #5a6a80;
+
+  /* 文本色 */
+  --color-text-primary: #e6e6e6;
+  --color-text-secondary: #a0a0a0;
+  --color-text-muted: #707070;
+  --color-text-accent: #ffffff;
+
+  /* 链接色 */
+  --color-link: #58a6ff;
+  --color-link-hover: #79c0ff;
+
+  /* 状态色 */
+  --color-success: #3fb950;
+  --color-success-hover: #2ea043;
+  --color-error: #f85149;
+  --color-warning: #e3b341;
+}
+
 /* 全局样式 */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+  scroll-behavior: smooth;
+}
+
 body {
   margin: 0;
   padding: 0;
@@ -7,8 +43,159 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
 }
 
 #root {
   min-height: 100vh;
+}
+
+/* 强制黑色背景，覆盖 Mantine 默认样式 */
+body,
+html,
+#root,
+#app {
+  background-color: var(--color-bg-primary) !important;
+}
+
+/* 链接样式 */
+a {
+  color: var(--color-link);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+a:hover {
+  color: var(--color-link-hover);
+  text-decoration: underline;
+}
+
+/* 选中样式 */
+::selection {
+  background-color: rgba(88, 166, 255, 0.25);
+  color: var(--color-text-primary);
+}
+
+/* 滚动条样式 */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: var(--color-border-muted);
+  border-radius: 6px;
+  border: 3px solid var(--color-bg-primary);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-border-accent);
+}
+
+::-webkit-scrollbar-corner {
+  background: var(--color-bg-primary);
+}
+
+/* 焦点样式 */
+:focus-visible {
+  outline: 2px solid var(--color-link);
+  outline-offset: 2px;
+}
+
+/* 按钮/链接重置 */
+button {
+  font-family: inherit;
+}
+
+/* 输入框自动填充样式 */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--color-text-primary);
+  -webkit-box-shadow: 0 0 0px 1000px var(--color-bg-primary) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+
+/* Mantine 组件样式覆盖 */
+.mantine-AppShell-header,
+.mantine-Header-root {
+  background-color: var(--color-bg-secondary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+.mantine-Select-dropdown,
+.mantine-MultiSelect-dropdown,
+.mantine-Modal-content,
+.mantine-Paper-root,
+.mantine-Menu-dropdown,
+.mantine-Popover-dropdown {
+  background-color: var(--color-bg-tertiary) !important;
+  border-color: var(--color-border-default) !important;
+}
+
+/* Mantine 下拉选项 */
+.mantine-Select-item,
+.mantine-MultiSelect-item {
+  color: var(--color-text-primary) !important;
+}
+
+.mantine-Select-item[data-selected],
+.mantine-MultiSelect-item[data-selected] {
+  background-color: var(--color-bg-elevated) !important;
+}
+
+.mantine-Select-item:hover,
+.mantine-MultiSelect-item:hover {
+  background-color: var(--color-bg-elevated) !important;
+}
+
+/* Mantine 输入框 */
+.mantine-TextInput-input,
+.mantine-Select-input {
+  background-color: var(--color-bg-elevated) !important;
+  border-color: var(--color-border-default) !important;
+  color: var(--color-text-primary) !important;
+}
+
+.mantine-TextInput-input::placeholder,
+.mantine-Select-input::placeholder {
+  color: var(--color-text-muted) !important;
+}
+
+/* 确保 Mantine 所有容器都使用深色背景 */
+div[class*="mantine"],
+section[class*="mantine"],
+nav[class*="mantine"],
+main[class*="mantine"] {
+  background-color: transparent !important;
+}
+
+/* Header 背景色由组件内联样式控制 */
+.mantine-AppShell-header.custom-header {
+  background-color: #212830 !important;
+  border-bottom: 1px solid #3f4b5c !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 下拉弹窗特别处理 */
+div[class*="dropdown"],
+div[class*="popover"] {
+  background-color: var(--color-bg-tertiary) !important;
+}
+
+/* SegmentedControl 选中状态文字颜色 */
+.mantine-SegmentedControl-label[data-active="true"] {
+  color: #212830 !important;
+  font-weight: 600 !important;
+}
+
+/* 备用方案 */
+.mantine-SegmentedControl-label[data-active] {
+  color: #212830 !important;
+  font-weight: 600 !important;
 }

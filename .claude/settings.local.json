@@ -6,7 +6,8 @@
       "Bash(ls:*)",
       "Bash(go mod tidy:*)",
       "Bash(go build:*)",
-      "Bash(wails generate module:*)"
+      "Bash(wails generate module:*)",
+      "Bash(npm run build)"
     ]
   }
 }

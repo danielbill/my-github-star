@@ -1,19 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
-  AppShell,
-  Header,
   Title,
-  Group,
+  Flex,
   Button,
-  Select,
-  Container,
-  Stack,
-  Paper,
-  Text,
-  Badge,
+  Avatar,
+  SegmentedControl,
 } from '@mantine/core';
-import { IconRefresh, IconBrandGithub } from '@tabler/icons-react';
+import { IconUser } from '@tabler/icons-react';
 import { TimeRange, LanguageFilter } from '../types';
+
+type ViewScope = 'all' | 'mine';
+type ViewPeriod = 'weekly' | 'monthly';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -57,78 +54,145 @@ export function MainLayout({
   repositoryCount,
   lastUpdate,
 }: MainLayoutProps) {
+  const [viewScope, setViewScope] = useState<ViewScope>('all');
+  const [viewPeriod, setViewPeriod] = useState<ViewPeriod>('weekly');
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+
   return (
-    <AppShell
-      header={{
-        height: 60,
-      }}
-      padding="md"
-    >
-      <AppShell.Header>
-        <Container size="xl" h="100%">
-          <Group h="100%" justify="space-between">
-            <Group gap="sm">
-              <IconBrandGithub size={28} />
-              <Title order={3}>GitHub Star Tracker</Title>
-            </Group>
-            <Group gap="sm">
-              <Badge variant="light" size="lg">
-                {repositoryCount} 个项目
-              </Badge>
-              {lastUpdate && (
-                <Text size="xs" c="dimmed">
-                  更新于 {lastUpdate.toLocaleTimeString()}
-                </Text>
-              )}
-            </Group>
-          </Group>
-        </Container>
-      </AppShell.Header>
+    <div style={{ minHeight: '100vh', backgroundColor: '#212830' }}>
+      <header className="custom-header" style={{
+        height: 50,
+        backgroundColor: '#212830',
+        borderBottom: '1px solid #3f4b5c',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+        display: 'flex',
+        alignItems: 'center',
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 1000,
+      }}>
+        <div style={{
+          maxWidth: 1280,
+          margin: '0 auto',
+          padding: '0 20px',
+          width: '100%',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+        }}>
+          <Title order={4} c="#a0a0a0" style={{ margin: 0, lineHeight: 1.2 }}>
+            GitHub Stars
+          </Title>
 
-      <AppShell.Main>
-        <Container size="xl">
-          <Stack gap="lg">
-            {/* 控制面板 */}
-            <Paper p="md" withBorder>
-              <Group justify="space-between">
-                <Group gap="sm">
-                  <Select
-                    label="时间范围"
-                    placeholder="选择时间范围"
-                    data={timeRangeOptions}
-                    value={timeRange}
-                    onChange={(value) => onTimeRangeChange(value as TimeRange)}
-                    style={{ width: 120 }}
-                    size="sm"
-                  />
-                  <Select
-                    label="编程语言"
-                    placeholder="筛选语言"
-                    data={languageOptions}
-                    value={language}
-                    onChange={onLanguageChange}
-                    style={{ width: 140 }}
-                    size="sm"
-                    searchable
-                    clearable
-                  />
-                </Group>
-                <Button
-                  leftSection={<IconRefresh size={16} />}
-                  onClick={onRefresh}
-                  loading={loading}
-                  variant="filled"
-                >
-                  刷新
-                </Button>
-              </Group>
-            </Paper>
+          <Flex gap="lg" align="center">
+            {/* 范围切换 */}
+            <SegmentedControl
+              data={[{ value: 'all', label: '全站' }, { value: 'mine', label: '我的' }]}
+              value={viewScope}
+              onChange={(value) => setViewScope(value as ViewScope)}
+              size="xs"
+              styles={{
+                root: {
+                  backgroundColor: '#3f4b5c',
+                  border: '1px solid #4a576a',
+                  borderRadius: '4px',
+                  padding: '2px',
+                  height: '30px',
+                },
+                indicator: {
+                  backgroundColor: '#4a576a',
+                  borderRadius: '2px',
+                  height: 'calc(100% - 4px)',
+                  margin: '-1px',
+                },
+                label: {
+                  color: '#a0a0a0',
+                  fontSize: '12px',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 12px',
+                  zIndex: 2,
+                  position: 'relative',
+                },
+              }}
+            />
 
-            {/* 主要内容 */}
-            {children}
-          </Stack>
-        </Container>
-      </AppShell.Main>
-    </AppShell>
+            {/* 时间切换 */}
+            <SegmentedControl
+              data={[{ value: 'weekly', label: '本周' }, { value: 'monthly', label: '本月' }]}
+              value={viewPeriod}
+              onChange={(value) => setViewPeriod(value as ViewPeriod)}
+              size="xs"
+              styles={{
+                root: {
+                  backgroundColor: '#3f4b5c',
+                  border: '1px solid #4a576a',
+                  borderRadius: '4px',
+                  padding: '2px',
+                  height: '30px',
+                },
+                indicator: {
+                  backgroundColor: '#4a576a',
+                  borderRadius: '2px',
+                  height: 'calc(100% - 4px)',
+                  margin: '-1px',
+                },
+                label: {
+                  color: '#a0a0a0',
+                  fontSize: '12px',
+                  height: '100%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '0 12px',
+                  zIndex: 2,
+                  position: 'relative',
+                },
+              }}
+            />
+
+            {/* 用户登录/头像 */}
+            {isLoggedIn ? (
+              <Avatar
+                radius="xl"
+                size={28}
+                src="/avatar-placeholder.png"
+                alt="User"
+                style={{ cursor: 'pointer' }}
+              />
+            ) : (
+              <Button
+                variant="subtle"
+                size="xs"
+                radius="sm"
+                leftSection={<IconUser size={14} />}
+                onClick={() => setIsLoggedIn(true)}
+                styles={{
+                  root: {
+                    backgroundColor: '#3f4b5c',
+                    color: '#a0a0a0',
+                    '&:hover': {
+                      backgroundColor: '#4a576a',
+                    },
+                  },
+                }}
+              >
+                Login
+              </Button>
+            )}
+          </Flex>
+        </div>
+      </header>
+
+      <main style={{ paddingTop: '60px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
+          {children}
+        </div>
+      </main>
+    </div>
   );
 }
