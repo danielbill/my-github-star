@@ -15,6 +15,7 @@ import (
 	"github-star-app/backend/logger"
 	"github-star-app/backend/models"
 	"github-star-app/backend/storage"
+
 	"github.com/wailsapp/wails/v2/pkg/runtime"
 )
 
@@ -31,6 +32,11 @@ type App struct {
 	deviceFlowService *auth.DeviceFlowService
 	appConfig         *config.Config
 	sharedDir         string // 记录 shared 目录路径
+
+	// 刷新计时器（控制刷新频率）
+	trendingLastRefresh   time.Time
+	userStarRepoLastRefresh time.Time
+	refreshMutex          sync.Mutex
 }
 
 // NewApp 创建新的应用实例
@@ -321,19 +327,80 @@ func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
 		return nil, fmt.Errorf("数据库未初始化")
 	}
 
+	// 检查计时器（60分钟内不能刷新）
+	a.refreshMutex.Lock()
+	if !a.userStarRepoLastRefresh.IsZero() && time.Since(a.userStarRepoLastRefresh) < time.Hour {
+		a.refreshMutex.Unlock()
+		// 返回缓存数据
+		repos, _ := a.db.GetUserStarRepos()
+		return a.convertUserStarReposToModels(repos), nil
+	}
+	a.refreshMutex.Unlock()
+
+	// 获取旧的星标数据（用于计算 stars_since）
+	oldRepos, _ := a.db.GetUserStarRepos()
+	oldStarsMap := make(map[int64]int)
+	var oldCachedAt time.Time
+	for _, repo := range oldRepos {
+		oldStarsMap[repo.GithubID] = repo.StargazersCount
+		if repo.CachedAt.After(oldCachedAt) {
+			oldCachedAt = repo.CachedAt
+		}
+	}
+
 	// 调用 OAuth 服务获取星标仓库
 	repos, err := a.oauthService.GetStarredRepositories()
 	if err != nil {
 		return nil, fmt.Errorf("获取星标仓库失败: %w", err)
 	}
 
-	// 转换并保存到数据库
-	starRepos := a.convertModelsToUserStarRepos(repos)
+	// 计算 time_range（刷新间隔小时数）
+	now := time.Now()
+	var timeRangeHours int
+	if !oldCachedAt.IsZero() {
+		hours := int(now.Sub(oldCachedAt).Hours())
+		if hours < 1 {
+			hours = 1
+		}
+		timeRangeHours = hours
+	} else {
+		timeRangeHours = 0
+	}
+
+	// 转换并计算 stars_since
+	starRepos := make([]database.UserStarRepo, len(repos))
+	for i, repo := range repos {
+		oldStars := oldStarsMap[repo.ID]
+		starsSince := repo.StargazersCount - oldStars
+		if starsSince < 0 {
+			starsSince = 0
+		}
+
+		starRepos[i] = database.UserStarRepo{
+			GithubID:        repo.ID,
+			FullName:        repo.FullName,
+			Name:            repo.Name,
+			Owner:           repo.Owner,
+			Description:     repo.Description,
+			StargazersCount: repo.StargazersCount,
+			StarsSince:      starsSince,
+			HTMLURL:         repo.HTMLURL,
+			CachedAt:        now,
+			TimeRange:       fmt.Sprintf("%d", timeRangeHours),
+		}
+	}
+
+	// 保存到数据库
 	if err := a.db.SaveUserStarRepos(starRepos); err != nil {
 		runtime.LogPrintf(a.ctx, "保存用户星标仓库失败: %v", err)
 	} else {
 		runtime.LogPrintf(a.ctx, "已保存 %d 个用户星标仓库", len(repos))
 	}
+
+	// 更新计时器
+	a.refreshMutex.Lock()
+	a.userStarRepoLastRefresh = time.Now()
+	a.refreshMutex.Unlock()
 
 	return repos, nil
 }
@@ -389,6 +456,30 @@ func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
 		return nil, fmt.Errorf("数据库未初始化")
 	}
 
+	// 检查计时器（60分钟内不能刷新）
+	a.refreshMutex.Lock()
+	if !a.trendingLastRefresh.IsZero() && time.Since(a.trendingLastRefresh) < time.Hour {
+		remaining := time.Hour - time.Since(a.trendingLastRefresh)
+		a.refreshMutex.Unlock()
+		// 返回缓存数据
+		response := &RefreshTrendingResponse{
+			Success: true,
+			Message: fmt.Sprintf("距离下次刷新还需 %.0f 分钟", remaining.Minutes()),
+		}
+		weeklyEntries, _ := a.db.GetLatestEntries("weekly")
+		response.Weekly.Repositories = a.convertEntriesToModels(weeklyEntries)
+		if len(weeklyEntries) > 0 {
+			response.Weekly.CachedAt = database.FormatCachedTime(weeklyEntries[0].CachedAt)
+		}
+		monthlyEntries, _ := a.db.GetLatestEntries("monthly")
+		response.Monthly.Repositories = a.convertEntriesToModels(monthlyEntries)
+		if len(monthlyEntries) > 0 {
+			response.Monthly.CachedAt = database.FormatCachedTime(monthlyEntries[0].CachedAt)
+		}
+		return response, nil
+	}
+	a.refreshMutex.Unlock()
+
 	now := time.Now()
 	currentHour := now.Truncate(time.Hour)
 
@@ -397,65 +488,45 @@ func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
 		Message: "刷新成功",
 	}
 
-	// 检查 weekly 是否需要刷新
-	weeklyNeedRefresh, weeklyCachedAt, _ := a.db.ShouldRefresh("weekly")
-	if weeklyNeedRefresh {
-		runtime.LogPrintf(a.ctx, "开始爬取 weekly 趋势数据...")
-		weeklyRepos, err := a.githubService.GetTrendingRepositories("", "weekly")
-		if err != nil {
-			runtime.LogPrintf(a.ctx, "爬取 weekly 数据失败: %v", err)
-			return &RefreshTrendingResponse{
-				Success: false,
-				Message: fmt.Sprintf("爬取 weekly 数据失败: %v", err),
-			}, err
-		}
-		weeklyEntries := a.convertModelsToEntries(weeklyRepos)
-		if err := a.db.SaveTrendingEntries(weeklyEntries, "weekly", currentHour); err != nil {
-			runtime.LogPrintf(a.ctx, "保存 weekly 数据失败: %v", err)
-		} else {
-			runtime.LogPrintf(a.ctx, "已保存 %d 条 weekly 趋势数据", len(weeklyRepos))
-		}
-		response.Weekly.Repositories = weeklyRepos
-		response.Weekly.CachedAt = database.FormatCachedTime(currentHour)
+	// 爬取 weekly 数据
+	runtime.LogPrintf(a.ctx, "开始爬取 weekly 趋势数据...")
+	weeklyRepos, err := a.githubService.GetTrendingRepositories("", "weekly")
+	if err != nil {
+		runtime.LogPrintf(a.ctx, "爬取 weekly 数据失败: %v", err)
+		return &RefreshTrendingResponse{
+			Success: false,
+			Message: fmt.Sprintf("爬取 weekly 数据失败: %v", err),
+		}, err
+	}
+	weeklyEntries := a.convertModelsToEntries(weeklyRepos)
+	if err := a.db.SaveTrendingEntries(weeklyEntries, "weekly", currentHour); err != nil {
+		runtime.LogPrintf(a.ctx, "保存 weekly 数据失败: %v", err)
 	} else {
-		// 使用缓存数据
-		weeklyEntries, _ := a.db.GetLatestEntries("weekly")
-		response.Weekly.Repositories = a.convertEntriesToModels(weeklyEntries)
-		if len(weeklyEntries) > 0 {
-			response.Weekly.CachedAt = database.FormatCachedTime(weeklyEntries[0].CachedAt)
+		runtime.LogPrintf(a.ctx, "已保存 %d 条 weekly 趋势数据", len(weeklyRepos))
+	}
+	response.Weekly.Repositories = weeklyRepos
+	response.Weekly.CachedAt = database.FormatCachedTime(currentHour)
+
+	// 爬取 monthly 数据
+	runtime.LogPrintf(a.ctx, "开始爬取 monthly 趋势数据...")
+	monthlyRepos, err := a.githubService.GetTrendingRepositories("", "monthly")
+	if err != nil {
+		runtime.LogPrintf(a.ctx, "爬取 monthly 数据失败: %v", err)
+	} else {
+		monthlyEntries := a.convertModelsToEntries(monthlyRepos)
+		if err := a.db.SaveTrendingEntries(monthlyEntries, "monthly", currentHour); err != nil {
+			runtime.LogPrintf(a.ctx, "保存 monthly 数据失败: %v", err)
+		} else {
+			runtime.LogPrintf(a.ctx, "已保存 %d 条 monthly 趋势数据", len(monthlyRepos))
 		}
-		response.Message = fmt.Sprintf("weekly 数据缓存于 %s，跳过爬取", database.FormatCachedTime(weeklyCachedAt))
+		response.Monthly.Repositories = monthlyRepos
+		response.Monthly.CachedAt = database.FormatCachedTime(currentHour)
 	}
 
-	// 检查 monthly 是否需要刷新
-	monthlyNeedRefresh, monthlyCachedAt, _ := a.db.ShouldRefresh("monthly")
-	if monthlyNeedRefresh {
-		runtime.LogPrintf(a.ctx, "开始爬取 monthly 趋势数据...")
-		monthlyRepos, err := a.githubService.GetTrendingRepositories("", "monthly")
-		if err != nil {
-			runtime.LogPrintf(a.ctx, "爬取 monthly 数据失败: %v", err)
-			// 即使失败也继续，因为 weekly 可能已经成功
-		} else {
-			monthlyEntries := a.convertModelsToEntries(monthlyRepos)
-			if err := a.db.SaveTrendingEntries(monthlyEntries, "monthly", currentHour); err != nil {
-				runtime.LogPrintf(a.ctx, "保存 monthly 数据失败: %v", err)
-			} else {
-				runtime.LogPrintf(a.ctx, "已保存 %d 条 monthly 趋势数据", len(monthlyRepos))
-			}
-			response.Monthly.Repositories = monthlyRepos
-			response.Monthly.CachedAt = database.FormatCachedTime(currentHour)
-		}
-	} else {
-		// 使用缓存数据
-		monthlyEntries, _ := a.db.GetLatestEntries("monthly")
-		response.Monthly.Repositories = a.convertEntriesToModels(monthlyEntries)
-		if len(monthlyEntries) > 0 {
-			response.Monthly.CachedAt = database.FormatCachedTime(monthlyEntries[0].CachedAt)
-		}
-		if weeklyNeedRefresh {
-			response.Message = fmt.Sprintf("monthly 数据缓存于 %s，跳过爬取", database.FormatCachedTime(monthlyCachedAt))
-		}
-	}
+	// 更新计时器
+	a.refreshMutex.Lock()
+	a.trendingLastRefresh = time.Now()
+	a.refreshMutex.Unlock()
 
 	return response, nil
 }
@@ -521,6 +592,7 @@ func (a *App) autoLoadInitialData(ctx context.Context) {
 		return
 	}
 
+	// 检查 Trending 数据
 	hasData, err := a.db.HasData()
 	if err != nil {
 		runtime.LogPrintf(ctx, "检查数据库状态失败: %v", err)
@@ -528,18 +600,40 @@ func (a *App) autoLoadInitialData(ctx context.Context) {
 	}
 
 	if !hasData {
-		runtime.LogPrintf(ctx, "数据库为空，开始自动爬取初始数据...")
-		// 在后台 goroutine 中执行，不阻塞启动
+		runtime.LogPrintf(ctx, "Trending 数据为空，开始自动爬取...")
 		go func() {
 			_, err := a.RefreshTrending()
 			if err != nil {
-				runtime.LogPrintf(ctx, "自动爬取初始数据失败: %v", err)
+				runtime.LogPrintf(ctx, "自动爬取 Trending 数据失败: %v", err)
 			} else {
-				runtime.LogPrintf(ctx, "自动爬取初始数据成功")
+				runtime.LogPrintf(ctx, "自动爬取 Trending 数据成功")
 			}
 		}()
 	} else {
-		runtime.LogPrintf(ctx, "数据库已有数据，跳过自动爬取")
+		runtime.LogPrintf(ctx, "Trending 数据已有，跳过自动爬取")
+	}
+
+	// 检查 UserStarRepo 数据（如果已登录）
+	if a.appConfig.IsLoggedIn() {
+		hasUserStarData, err := a.db.HasUserStarRepos()
+		if err != nil {
+			runtime.LogPrintf(ctx, "检查用户星标数据状态失败: %v", err)
+			return
+		}
+
+		if !hasUserStarData {
+			runtime.LogPrintf(ctx, "用户星标数据为空，开始自动爬取...")
+			go func() {
+				_, err := a.RefreshUserStarRepo()
+				if err != nil {
+					runtime.LogPrintf(ctx, "自动爬取用户星标数据失败: %v", err)
+				} else {
+					runtime.LogPrintf(ctx, "自动爬取用户星标数据成功")
+				}
+			}()
+		} else {
+			runtime.LogPrintf(ctx, "用户星标数据已有，跳过自动爬取")
+		}
 	}
 }
 
