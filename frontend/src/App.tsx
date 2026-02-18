@@ -76,10 +76,13 @@ function App() {
 
     try {
       const result = await GetTrendingRepositories(language, timeRange);
-      setRepositories((result || []).map((repo: any) => ({
+      const repos = (result || []).map((repo: any) => ({
         ...repo,
         created_at: repo.created_at instanceof Date ? repo.created_at.toISOString() : String(repo.created_at),
-      })));
+      }));
+      // 按照周期内新增星标数降序排序
+      repos.sort((a, b) => (b.stars_since || 0) - (a.stars_since || 0));
+      setRepositories(repos);
       setLastUpdate(new Date());
     } catch (err) {
       console.error('加载失败:', err);
