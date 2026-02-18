@@ -90,10 +90,10 @@ function App() {
     }
   }, [language, timeRange]);
 
-  // 初始加载
+  // 初始加载和当 timeRange 或 language 变化时重新加载
   useEffect(() => {
     loadRepositories();
-  }, []);
+  }, [timeRange, language]);
 
   // 刷新按钮
   const handleRefresh = () => {

@@ -6,11 +6,10 @@ import {
   Avatar,
   SegmentedControl,
 } from '@mantine/core';
-import { IconBrandGithub } from '@tabler/icons-react';
+import { IconBrandGithub, IconRefresh } from '@tabler/icons-react';
 import { TimeRange, LanguageFilter } from '../types';
 
 type ViewScope = 'all' | 'mine';
-type ViewPeriod = 'weekly' | 'monthly';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -55,8 +54,14 @@ export function MainLayout({
   lastUpdate,
 }: MainLayoutProps) {
   const [viewScope, setViewScope] = useState<ViewScope>('all');
-  const [viewPeriod, setViewPeriod] = useState<ViewPeriod>('weekly');
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const handleTimeRangeChange = (value: string | string[]) => {
+    const newValue = Array.isArray(value) ? value[0] : value;
+    if (newValue === 'weekly' || newValue === 'monthly') {
+      onTimeRangeChange(newValue as 'weekly' | 'monthly');
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#212830' }}>
@@ -91,9 +96,10 @@ export function MainLayout({
             {/* 时间切换 */}
             <SegmentedControl
               data={[{ value: 'weekly', label: '本周' }, { value: 'monthly', label: '本月' }]}
-              value={viewPeriod}
-              onChange={(value) => setViewPeriod(value as ViewPeriod)}
+              value={timeRange === 'daily' ? 'weekly' : timeRange}
+              onChange={handleTimeRangeChange}
               size="xs"
+              disabled={loading}
               styles={{
                 root: {
                   backgroundColor: '#3f4b5c',
