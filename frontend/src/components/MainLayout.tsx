@@ -2,11 +2,11 @@ import React, { useState } from 'react';
 import {
   Title,
   Flex,
-  Button,
+  ActionIcon,
   Avatar,
   SegmentedControl,
 } from '@mantine/core';
-import { IconUser } from '@tabler/icons-react';
+import { IconBrandGithub } from '@tabler/icons-react';
 import { TimeRange, LanguageFilter } from '../types';
 
 type ViewScope = 'all' | 'mine';
@@ -63,7 +63,7 @@ export function MainLayout({
       <header className="custom-header" style={{
         height: 50,
         backgroundColor: '#212830',
-        borderBottom: '1px solid #3f4b5c',
+        borderBottom: '0px solid #3f4b5c',
         boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
         display: 'flex',
         alignItems: 'center',
@@ -86,40 +86,7 @@ export function MainLayout({
             GitHub Stars
           </Title>
 
-          <Flex gap="lg" align="center">
-            {/* 范围切换 */}
-            <SegmentedControl
-              data={[{ value: 'all', label: '全站' }, { value: 'mine', label: '我的' }]}
-              value={viewScope}
-              onChange={(value) => setViewScope(value as ViewScope)}
-              size="xs"
-              styles={{
-                root: {
-                  backgroundColor: '#3f4b5c',
-                  border: '1px solid #4a576a',
-                  borderRadius: '4px',
-                  padding: '2px',
-                  height: '30px',
-                },
-                indicator: {
-                  backgroundColor: '#4a576a',
-                  borderRadius: '2px',
-                  height: 'calc(100% - 4px)',
-                  margin: '-1px',
-                },
-                label: {
-                  color: '#a0a0a0',
-                  fontSize: '12px',
-                  height: '100%',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  padding: '0 12px',
-                  zIndex: 2,
-                  position: 'relative',
-                },
-              }}
-            />
+          <Flex gap="lg" align="center">          
 
             {/* 时间切换 */}
             <SegmentedControl
@@ -159,17 +126,16 @@ export function MainLayout({
             {isLoggedIn ? (
               <Avatar
                 radius="xl"
-                size={28}
+                size={30}
                 src="/avatar-placeholder.png"
                 alt="User"
                 style={{ cursor: 'pointer' }}
               />
             ) : (
-              <Button
+              <ActionIcon
                 variant="subtle"
-                size="xs"
+                size="md"
                 radius="sm"
-                leftSection={<IconUser size={14} />}
                 onClick={() => setIsLoggedIn(true)}
                 styles={{
                   root: {
@@ -181,16 +147,21 @@ export function MainLayout({
                   },
                 }}
               >
-                Login
-              </Button>
+                <IconBrandGithub size={20} />
+              </ActionIcon>
             )}
           </Flex>
         </div>
       </header>
 
       <main style={{ paddingTop: '60px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto' }}>
-          {children}
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '18px' }}>
+          <div style={{ flex: 6 }}>
+            {children}
+          </div>
+          <div style={{ flex: 4 }}>
+            {/* 我的列表 */}
+          </div>
         </div>
       </main>
     </div>

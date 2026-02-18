@@ -76,68 +76,23 @@ export function ProjectCard({ repository }: ProjectCardProps) {
             >
               {repository.full_name}
             </Anchor>
+            <IconStar size={13} className={classes.starIcon} />
+            <Text size="xs" c="var(--color-text-secondary)">
+              {formatStars(repository.stargazers_count)}
+            </Text>
           </Group>
 
           {/* 描述 */}
           <Text size="sm" c="var(--color-text-secondary)" mb="sm" className={classes.description}>
             {repository.description || 'No description provided'}
           </Text>
-
-          {/* 元数据 */}
-          <Flex gap="lg" align="center" wrap="wrap">
-            {repository.language && (
-              <Flex gap="xs" align="center" className={classes.metadataItem}>
-                <span
-                  className={classes.languageDot}
-                  style={{ backgroundColor: getLanguageColor(repository.language) }}
-                />
-                <Text size="xs" c="var(--color-text-secondary)">{repository.language}</Text>
-              </Flex>
-            )}
-
-            {repository.stargazers_count > 0 && (
-              <Flex gap="4" align="center" className={classes.metadataItem}>
-                <IconStar size={13} className={classes.starIcon} />
-                <Text size="xs" c="var(--color-text-secondary)">
-                  {formatStars(repository.stargazers_count)}
-                </Text>
-              </Flex>
-            )}
-
-            {repository.forks_count > 0 && (
-              <Flex gap="4" align="center" className={classes.metadataItem}>
-                <IconGitFork size={13} className={classes.forkIcon} />
-                <Text size="xs" c="var(--color-text-secondary)">
-                  {formatStars(repository.forks_count)}
-                </Text>
-              </Flex>
-            )}
-          </Flex>
         </div>
 
-        {/* 右侧操作按钮 */}
-        <Button
-          variant="light"
-          color="gray"
-          size="xs"
-          radius="sm"
-          leftSection={<IconStarFilled size={14} />}
-          className={classes.starButton}
-          styles={{
-            root: {
-              backgroundColor: 'transparent',
-              border: '1px solid var(--color-border-muted)',
-              color: 'var(--color-text-secondary)',
-              '&:hover': {
-                backgroundColor: 'var(--color-bg-elevated)',
-                borderColor: 'var(--color-text-secondary)',
-                color: 'var(--color-warning)',
-              },
-            },
-          }}
-        >
-          Star
-        </Button>
+        <div style={{ color: '#707070', fontSize: '11px' }}>
+          + <IconStar size={10} /> {formatStars(repository.stargazers_count)}  
+        </div>
+         
+
       </Flex>
     </div>
   );
