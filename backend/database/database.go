@@ -55,7 +55,7 @@ func NewDB(sharedDir string) (*DB, error) {
 
 // Init 初始化数据库表结构
 func (d *DB) Init() error {
-	return d.db.AutoMigrate(&TrendingEntry{})
+	return d.db.AutoMigrate(&TrendingEntry{}, &UserStarRepo{})
 }
 
 // Close 关闭数据库连接
