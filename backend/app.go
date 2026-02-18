@@ -299,6 +299,82 @@ func (a *App) LoadTrendingData() (*LoadTrendingDataResponse, error) {
 	return response, nil
 }
 
+// LoadUserStarRepo 从数据库加载用户星标仓库
+func (a *App) LoadUserStarRepo() ([]models.Repository, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("数据库未初始化")
+	}
+
+	// 从数据库读取
+	repos, err := a.db.GetUserStarRepos()
+	if err != nil {
+		return nil, fmt.Errorf("加载用户星标仓库失败: %w", err)
+	}
+
+	// 转换为 models.Repository
+	return a.convertUserStarReposToModels(repos), nil
+}
+
+// RefreshUserStarRepo 刷新用户星标仓库（从 GitHub API 获取并保存到数据库）
+func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
+	if a.db == nil {
+		return nil, fmt.Errorf("数据库未初始化")
+	}
+
+	// 调用 OAuth 服务获取星标仓库
+	repos, err := a.oauthService.GetStarredRepositories()
+	if err != nil {
+		return nil, fmt.Errorf("获取星标仓库失败: %w", err)
+	}
+
+	// 转换并保存到数据库
+	starRepos := a.convertModelsToUserStarRepos(repos)
+	if err := a.db.SaveUserStarRepos(starRepos); err != nil {
+		runtime.LogPrintf(a.ctx, "保存用户星标仓库失败: %v", err)
+	} else {
+		runtime.LogPrintf(a.ctx, "已保存 %d 个用户星标仓库", len(repos))
+	}
+
+	return repos, nil
+}
+
+// convertUserStarReposToModels 将 database.UserStarRepo 转换为 models.Repository
+func (a *App) convertUserStarReposToModels(repos []database.UserStarRepo) []models.Repository {
+	result := make([]models.Repository, len(repos))
+	for i, repo := range repos {
+		result[i] = models.Repository{
+			ID:              repo.GithubID,
+			FullName:        repo.FullName,
+			Name:            repo.Name,
+			Owner:           repo.Owner,
+			Description:     repo.Description,
+			StargazersCount: repo.StargazersCount,
+			StarsSince:      repo.StarsSince,
+			HTMLURL:         repo.HTMLURL,
+		}
+	}
+	return result
+}
+
+// convertModelsToUserStarRepos 将 models.Repository 转换为 database.UserStarRepo
+func (a *App) convertModelsToUserStarRepos(repos []models.Repository) []database.UserStarRepo {
+	result := make([]database.UserStarRepo, len(repos))
+	for i, repo := range repos {
+		result[i] = database.UserStarRepo{
+			GithubID:        repo.ID,
+			FullName:        repo.FullName,
+			Name:            repo.Name,
+			Owner:           repo.Owner,
+			Description:     repo.Description,
+			StargazersCount: repo.StargazersCount,
+			StarsSince:      repo.StarsSince,
+			HTMLURL:         repo.HTMLURL,
+			CachedAt:        time.Now(),
+		}
+	}
+	return result
+}
+
 // RefreshTrendingResponse 刷新趋势数据的响应
 type RefreshTrendingResponse struct {
 	Success  bool         `json:"success"`

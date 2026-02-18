@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Paper, Text, Stack, Group, Anchor, ScrollArea, LoadingOverlay, ActionIcon, Tooltip } from '@mantine/core';
 import { IconStarFilled, IconBrandGithub, IconRefresh } from '@tabler/icons-react';
 import { Repository } from '../types';
-import { GetStarredRepositories } from '../../wailsjs/go/backend/App';
+import { LoadUserStarRepo, RefreshUserStarRepo } from '../../wailsjs/go/backend/App';
 import { useAuth } from '../hooks/useAuth';
 import { OpenURL } from '../../wailsjs/go/backend/App';
 import classes from './StarredSidebar.module.css';
@@ -69,12 +69,26 @@ export function StarredSidebar() {
     setLoading(true);
     setError(null);
     try {
-      const repos = await GetStarredRepositories();
+      const repos = await LoadUserStarRepo();
       setRepositories(repos || []);
     } catch (err) {
       console.error('加载星标仓库失败:', err);
       setError(err instanceof Error ? err.message : '加载失败');
       setRepositories([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRefresh = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const repos = await RefreshUserStarRepo();
+      setRepositories(repos || []);
+    } catch (err) {
+      console.error('刷新星标仓库失败:', err);
+      setError(err instanceof Error ? err.message : '刷新失败');
     } finally {
       setLoading(false);
     }
@@ -100,7 +114,26 @@ export function StarredSidebar() {
         <Text size="sm" fw={600} className={classes.headerTitle}>
           个人星标仓库 [{repositories.length}]
         </Text>
-        
+        <Tooltip label="刷新" position="bottom" withArrow>
+          <ActionIcon
+            variant="subtle"
+            size="sm"
+            radius="sm"
+            onClick={handleRefresh}
+            disabled={loading}
+            styles={{
+              root: {
+                backgroundColor: 'transparent',
+                color: '#6a7a90',
+                '&:hover': {
+                  backgroundColor: '#3f4b5c',
+                },
+              },
+            }}
+          >
+            <IconRefresh size={16} className={loading ? 'spin' : ''} />
+          </ActionIcon>
+        </Tooltip>
       </div>
 
       <ScrollArea flex={1}>

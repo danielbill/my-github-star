@@ -42,6 +42,10 @@ export function LoadTrendingData() {
   return window['go']['backend']['App']['LoadTrendingData']();
 }
 
+export function LoadUserStarRepo() {
+  return window['go']['backend']['App']['LoadUserStarRepo']();
+}
+
 export function Logout() {
   return window['go']['backend']['App']['Logout']();
 }
@@ -56,6 +60,10 @@ export function OpenVerificationURL() {
 
 export function RefreshTrending() {
   return window['go']['backend']['App']['RefreshTrending']();
+}
+
+export function RefreshUserStarRepo() {
+  return window['go']['backend']['App']['RefreshUserStarRepo']();
 }
 
 export function SetGitHubConfig(arg1, arg2) {

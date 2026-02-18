@@ -24,6 +24,8 @@ export function IsLoggedIn():Promise<boolean>;
 
 export function LoadTrendingData():Promise<backend.LoadTrendingDataResponse>;
 
+export function LoadUserStarRepo():Promise<Array<models.Repository>>;
+
 export function Logout():Promise<void>;
 
 export function OpenURL(arg1:string):Promise<void>;
@@ -31,6 +33,8 @@ export function OpenURL(arg1:string):Promise<void>;
 export function OpenVerificationURL():Promise<void>;
 
 export function RefreshTrending():Promise<backend.RefreshTrendingResponse>;
+
+export function RefreshUserStarRepo():Promise<Array<models.Repository>>;
 
 export function SetGitHubConfig(arg1:string,arg2:string):Promise<void>;
 

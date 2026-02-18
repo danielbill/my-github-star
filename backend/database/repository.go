@@ -119,3 +119,38 @@ func ParseCachedTime(s string) (time.Time, error) {
 	}
 	return time.Parse("2006-01-02 15:00:00", s)
 }
+
+// SaveUserStarRepos 保存用户星标仓库
+func (d *DB) SaveUserStarRepos(repos []UserStarRepo) error {
+	return d.db.Transaction(func(tx *gorm.DB) error {
+		// 删除所有旧数据
+		if err := tx.Where("1 = 1").Delete(&UserStarRepo{}).Error; err != nil {
+			return fmt.Errorf("删除旧数据失败: %w", err)
+		}
+
+		// 批量插入新数据
+		if len(repos) > 0 {
+			if err := tx.Create(&repos).Error; err != nil {
+				return fmt.Errorf("保存数据失败: %w", err)
+			}
+		}
+
+		return nil
+	})
+}
+
+// GetUserStarRepos 获取用户星标仓库列表
+func (d *DB) GetUserStarRepos() ([]UserStarRepo, error) {
+	var repos []UserStarRepo
+	if err := d.db.Order("stargazers_count DESC").Find(&repos).Error; err != nil {
+		return nil, err
+	}
+	return repos, nil
+}
+
+// HasUserStarRepos 检查是否有用户星标数据
+func (d *DB) HasUserStarRepos() (bool, error) {
+	var count int64
+	err := d.db.Model(&UserStarRepo{}).Count(&count).Error
+	return count > 0, err
+}
