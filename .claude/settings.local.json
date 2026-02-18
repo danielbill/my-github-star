@@ -1,0 +1,12 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install:*)",
+      "Bash(wails dev)",
+      "Bash(ls:*)",
+      "Bash(go mod tidy:*)",
+      "Bash(go build:*)",
+      "Bash(wails generate module:*)"
+    ]
+  }
+}
