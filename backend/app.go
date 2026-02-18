@@ -33,10 +33,9 @@ type App struct {
 	appConfig         *config.Config
 	sharedDir         string // 记录 shared 目录路径
 
-	// 刷新计时器（控制刷新频率）
-	trendingLastRefresh   time.Time
-	userStarRepoLastRefresh time.Time
-	refreshMutex          sync.Mutex
+	// 刷新计时器（控制刷新频率，60分钟内只能刷新一次）
+	lastRefresh   time.Time
+	refreshMutex  sync.Mutex
 }
 
 // NewApp 创建新的应用实例
@@ -329,7 +328,7 @@ func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
 
 	// 检查计时器（60分钟内不能刷新）
 	a.refreshMutex.Lock()
-	if !a.userStarRepoLastRefresh.IsZero() && time.Since(a.userStarRepoLastRefresh) < time.Hour {
+	if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < time.Hour {
 		a.refreshMutex.Unlock()
 		// 返回缓存数据
 		repos, _ := a.db.GetUserStarRepos()
@@ -337,6 +336,19 @@ func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
 	}
 	a.refreshMutex.Unlock()
 
+	// 执行刷新
+	repos := a.refreshUserStarRepoInternal()
+
+	// 更新计时器
+	a.refreshMutex.Lock()
+	a.lastRefresh = time.Now()
+	a.refreshMutex.Unlock()
+
+	return repos, nil
+}
+
+// refreshUserStarRepoInternal 内部刷新方法，不检查计时器
+func (a *App) refreshUserStarRepoInternal() []models.Repository {
 	// 获取旧的星标数据（用于计算 stars_since）
 	oldRepos, _ := a.db.GetUserStarRepos()
 	oldStarsMap := make(map[int64]int)
@@ -351,7 +363,8 @@ func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
 	// 调用 OAuth 服务获取星标仓库
 	repos, err := a.oauthService.GetStarredRepositories()
 	if err != nil {
-		return nil, fmt.Errorf("获取星标仓库失败: %w", err)
+		runtime.LogPrintf(a.ctx, "获取星标仓库失败: %v", err)
+		return nil
 	}
 
 	// 计算 time_range（刷新间隔小时数）
@@ -397,12 +410,7 @@ func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
 		runtime.LogPrintf(a.ctx, "已保存 %d 个用户星标仓库", len(repos))
 	}
 
-	// 更新计时器
-	a.refreshMutex.Lock()
-	a.userStarRepoLastRefresh = time.Now()
-	a.refreshMutex.Unlock()
-
-	return repos, nil
+	return repos
 }
 
 // convertUserStarReposToModels 将 database.UserStarRepo 转换为 models.Repository
@@ -458,8 +466,8 @@ func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
 
 	// 检查计时器（60分钟内不能刷新）
 	a.refreshMutex.Lock()
-	if !a.trendingLastRefresh.IsZero() && time.Since(a.trendingLastRefresh) < time.Hour {
-		remaining := time.Hour - time.Since(a.trendingLastRefresh)
+	if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < time.Hour {
+		remaining := time.Hour - time.Since(a.lastRefresh)
 		a.refreshMutex.Unlock()
 		// 返回缓存数据
 		response := &RefreshTrendingResponse{
@@ -480,6 +488,19 @@ func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
 	}
 	a.refreshMutex.Unlock()
 
+	// 执行刷新
+	response := a.refreshTrendingInternal()
+
+	// 更新计时器
+	a.refreshMutex.Lock()
+	a.lastRefresh = time.Now()
+	a.refreshMutex.Unlock()
+
+	return response, nil
+}
+
+// refreshTrendingInternal 内部刷新方法，不检查计时器
+func (a *App) refreshTrendingInternal() *RefreshTrendingResponse {
 	now := time.Now()
 	currentHour := now.Truncate(time.Hour)
 
@@ -493,10 +514,9 @@ func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
 	weeklyRepos, err := a.githubService.GetTrendingRepositories("", "weekly")
 	if err != nil {
 		runtime.LogPrintf(a.ctx, "爬取 weekly 数据失败: %v", err)
-		return &RefreshTrendingResponse{
-			Success: false,
-			Message: fmt.Sprintf("爬取 weekly 数据失败: %v", err),
-		}, err
+		response.Success = false
+		response.Message = fmt.Sprintf("爬取 weekly 数据失败: %v", err)
+		return response
 	}
 	weeklyEntries := a.convertModelsToEntries(weeklyRepos)
 	if err := a.db.SaveTrendingEntries(weeklyEntries, "weekly", currentHour); err != nil {
@@ -523,12 +543,7 @@ func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
 		response.Monthly.CachedAt = database.FormatCachedTime(currentHour)
 	}
 
-	// 更新计时器
-	a.refreshMutex.Lock()
-	a.trendingLastRefresh = time.Now()
-	a.refreshMutex.Unlock()
-
-	return response, nil
+	return response
 }
 
 // GetTrendingRepositories 根据 timeRange 返回对应的数据
@@ -585,55 +600,63 @@ func (a *App) convertEntriesToModels(entries []database.TrendingEntry) []models.
 }
 
 // autoLoadInitialData 应用启动时自动加载初始数据
-// 如果数据库为空，自动触发首次爬取
+// 根据数据库缓存时间决定是否需要刷新，并初始化计时器
 func (a *App) autoLoadInitialData(ctx context.Context) {
 	if a.db == nil {
 		runtime.LogPrintf(ctx, "数据库未初始化，跳过自动加载")
 		return
 	}
 
-	// 检查 Trending 数据
-	hasData, err := a.db.HasData()
+	// 获取数据库最新的缓存时间
+	cachedAt, err := a.db.GetLatestCachedAt()
 	if err != nil {
-		runtime.LogPrintf(ctx, "检查数据库状态失败: %v", err)
+		runtime.LogPrintf(ctx, "获取缓存时间失败: %v", err)
 		return
 	}
 
-	if !hasData {
-		runtime.LogPrintf(ctx, "Trending 数据为空，开始自动爬取...")
-		go func() {
-			_, err := a.RefreshTrending()
-			if err != nil {
-				runtime.LogPrintf(ctx, "自动爬取 Trending 数据失败: %v", err)
-			} else {
-				runtime.LogPrintf(ctx, "自动爬取 Trending 数据成功")
-			}
-		}()
+	now := time.Now()
+	var elapsed time.Duration
+	if cachedAt.IsZero() {
+		elapsed = time.Hour // 无数据，视为已过1小时
 	} else {
-		runtime.LogPrintf(ctx, "Trending 数据已有，跳过自动爬取")
+		elapsed = now.Sub(cachedAt)
 	}
 
-	// 检查 UserStarRepo 数据（如果已登录）
+	// 初始化计时器
+	a.refreshMutex.Lock()
+	if elapsed >= time.Hour {
+		// 超过1小时或无数据，可以立即刷新，计时器从现在开始
+		a.lastRefresh = time.Time{} // 零值，表示可以刷新
+		a.refreshMutex.Unlock()
+
+		runtime.LogPrintf(ctx, "缓存已过期或无数据，开始自动爬取...")
+		go a.doRefresh(ctx)
+	} else {
+		// 未满1小时，设置计时器为剩余时间
+		// lastRefresh 设置为 (now - elapsed)，这样 time.Since(lastRefresh) = elapsed
+		a.lastRefresh = now.Add(-elapsed)
+		a.refreshMutex.Unlock()
+
+		remaining := time.Hour - elapsed
+		runtime.LogPrintf(ctx, "缓存有效，距下次刷新还需 %.0f 分钟", remaining.Minutes())
+	}
+}
+
+// doRefresh 执行实际的数据刷新
+func (a *App) doRefresh(ctx context.Context) {
+	// 刷新 Trending 数据
+	a.refreshTrendingInternal()
+	runtime.LogPrintf(ctx, "自动爬取 Trending 数据完成")
+
+	// 刷新 UserStarRepo 数据（如果已登录）
 	if a.appConfig.IsLoggedIn() {
-		hasUserStarData, err := a.db.HasUserStarRepos()
-		if err != nil {
-			runtime.LogPrintf(ctx, "检查用户星标数据状态失败: %v", err)
-			return
-		}
-
-		if !hasUserStarData {
-			runtime.LogPrintf(ctx, "用户星标数据为空，开始自动爬取...")
-			go func() {
-				_, err := a.RefreshUserStarRepo()
-				if err != nil {
-					runtime.LogPrintf(ctx, "自动爬取用户星标数据失败: %v", err)
-				} else {
-					runtime.LogPrintf(ctx, "自动爬取用户星标数据成功")
-				}
-			}()
-		} else {
-			runtime.LogPrintf(ctx, "用户星标数据已有，跳过自动爬取")
-		}
+		a.refreshUserStarRepoInternal()
+		runtime.LogPrintf(ctx, "自动爬取用户星标数据完成")
 	}
+
+	// 更新计时器
+	a.refreshMutex.Lock()
+	a.lastRefresh = time.Now()
+	a.refreshMutex.Unlock()
 }
 

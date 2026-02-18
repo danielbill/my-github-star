@@ -197,6 +197,27 @@ func (d *DB) HasUserStarRepos() (bool, error) {
 	return count > 0, err
 }
 
+// GetLatestCachedAt 获取最新的缓存时间（用于启动时判断是否需要刷新）
+func (d *DB) GetLatestCachedAt() (time.Time, error) {
+	var latestTime time.Time
+
+	// 获取 Trending 表最新时间
+	var trendingEntry TrendingEntry
+	if err := d.db.Order("cached_at DESC").First(&trendingEntry).Error; err == nil {
+		latestTime = trendingEntry.CachedAt
+	}
+
+	// 获取 UserStarRepo 表最新时间
+	var userStarRepo UserStarRepo
+	if err := d.db.Order("cached_at DESC").First(&userStarRepo).Error; err == nil {
+		if userStarRepo.CachedAt.After(latestTime) {
+			latestTime = userStarRepo.CachedAt
+		}
+	}
+
+	return latestTime, nil
+}
+
 // GetUserStarReposCachedTime 获取用户星标仓库的缓存时间
 func (d *DB) GetUserStarReposCachedTime() (time.Time, error) {
 	var repo UserStarRepo
