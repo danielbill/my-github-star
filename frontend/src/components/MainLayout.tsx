@@ -29,6 +29,7 @@ import {
 import { TimeRange, LanguageFilter } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { GetLogs } from '../../wailsjs/go/backend/App';
+import { StarredSidebar } from './StarredSidebar';
 
 type ViewScope = 'all' | 'mine';
 
@@ -159,14 +160,16 @@ export function MainLayout({
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
+          position: 'relative',
         }}>
-          <Title order={4} c="#a0a0a0" style={{ margin: 0, lineHeight: 1.2 }}>
-            GitHub Stars
-          </Title>
+          <div style={{ width: 400, minWidth: 400 }}>
+            <Title order={4} c="#a0a0a0" style={{ margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
+              GitHub Stars
+            </Title>
+          </div>
 
-          <Flex gap="lg" align="center">
-
-            {/* 时间切换 */}
+          {/* 时间切换 - 居中 */}
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
             <SegmentedControl
               data={[{ value: 'weekly', label: '本周' }, { value: 'monthly', label: '本月' }]}
               value={timeRange === 'daily' ? 'weekly' : timeRange}
@@ -200,7 +203,9 @@ export function MainLayout({
                 },
               }}
             />
+          </div>
 
+          <Flex gap="lg" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
             {/* 日志按钮 */}
             <Tooltip label="查看日志" position="bottom-end" withArrow>
               <ActionIcon
@@ -293,7 +298,8 @@ export function MainLayout({
             {children}
           </div>
           <div style={{ flex: 4 }}>
-            {/* 我的列表 - 登录后显示 */}
+            {/* 我的星标列表 - 登录后显示 */}
+            <StarredSidebar />
           </div>
         </div>
       </main>

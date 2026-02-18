@@ -5,6 +5,7 @@ import { GetTrendingRepositories } from '../wailsjs/go/backend/App';
 import { MainLayout } from './components/MainLayout';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
+import { StarredSidebar } from './components/StarredSidebar';
 import { Repository, TimeRange, LanguageFilter } from './types';
 import './style.css';
 import './App.css';

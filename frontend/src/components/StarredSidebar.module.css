@@ -1,0 +1,61 @@
+.header {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--color-border-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.headerTitle {
+  color: #a0a0a0;
+}
+
+.content {
+  padding: 12px 16px;
+  min-height: 200px;
+  position: relative;
+}
+
+.repoItem {
+  padding: 8px;
+  border-radius: 10px !important;
+  transition: background-color 0.15s ease;
+}
+
+.repoItem:hover {
+  background-color: var(--color-bg-elevated);
+}
+
+.repoIcon {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.repoLink {
+  color: var(--color-link);
+  text-decoration: none;
+  min-width: 0;
+  transition: color 0.15s ease;
+}
+
+.repoLink:hover {
+  color: var(--color-link-hover);
+}
+
+.starIcon {
+  color: var(--color-text-secondary);
+  flex-shrink: 0;
+}
+
+.starCount {
+  flex-shrink: 0;
+  color: var(--color-text-secondary);
+}
+
+.refreshIcon {
+  color: var(--color-text-secondary);
+}
+
+.refreshIcon:hover {
+  color: var(--color-text-primary);
+}

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"sort"
 	"time"
 
 	"github-star-app/backend/config"
@@ -353,7 +354,7 @@ func (s *OAuthService) GetStarredRepositories() ([]models.Repository, error) {
 		Timeout: 10 * time.Second,
 	}
 
-	req, err := http.NewRequest("GET", "https://api.github.com/user/starred?sort=created&per_page=30", nil)
+	req, err := http.NewRequest("GET", "https://api.github.com/user/starred?per_page=100", nil)
 	if err != nil {
 		return nil, err
 	}
@@ -406,6 +407,11 @@ func (s *OAuthService) GetStarredRepositories() ([]models.Repository, error) {
 			HTMLURL:         repo.HTMLURL,
 		}
 	}
+
+	// 按总星标数降序排序
+	sort.Slice(repos, func(i, j int) bool {
+		return repos[i].StargazersCount > repos[j].StargazersCount
+	})
 
 	return repos, nil
 }

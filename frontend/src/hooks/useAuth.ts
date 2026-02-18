@@ -5,6 +5,8 @@ import {
   Logout,
   OpenURL,
   StartDeviceFlowLogin,
+  IsLoggedIn,
+  GetCurrentUser,
 } from '../../wailsjs/go/backend/App';
 import { GitHubUser, DeviceFlowInfo } from '../types';
 import { ClipboardSetText } from '../../wailsjs/runtime/runtime';
@@ -12,9 +14,30 @@ import { ClipboardSetText } from '../../wailsjs/runtime/runtime';
 export function useAuth() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [user, setUser] = useState<GitHubUser | null>(null);
-  // Per requirement: do not trigger any auth/status calls on app startup.
   const [isLoading, setIsLoading] = useState(false);
   const [deviceCode, setDeviceCode] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
+
+  // 应用启动时检查登录状态（自动登录）
+  useEffect(() => {
+    const checkLoginStatus = async () => {
+      try {
+        const loggedIn = await IsLoggedIn();
+        if (loggedIn) {
+          const userData = await GetCurrentUser();
+          console.log('[useAuth] 自动登录成功:', userData);
+          setIsLoggedIn(true);
+          setUser(userData as GitHubUser);
+        }
+      } catch (error) {
+        console.error('[useAuth] 检查登录状态失败:', error);
+      } finally {
+        setIsInitialized(true);
+      }
+    };
+
+    checkLoginStatus();
+  }, []);
 
   // 监听登录成功事件
   useEffect(() => {
