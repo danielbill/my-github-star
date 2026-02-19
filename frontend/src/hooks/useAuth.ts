@@ -17,6 +17,7 @@ export function useAuth() {
   const [user, setUser] = useState<GitHubUser | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [deviceCode, setDeviceCode] = useState<string | null>(null);
+  const [verificationUri, setVerificationUri] = useState<string | null>(null);
   const [isInitialized, setIsInitialized] = useState(false);
 
   // 应用启动时检查登录状态（自动登录）
@@ -105,6 +106,11 @@ export function useAuth() {
 
       // 显示用户码
       setDeviceCode(info.user_code);
+      
+      // 保存验证 URI，不自动打开浏览器
+      const complete = (info as any).verification_uri_complete as string | undefined;
+      const uri = complete && complete.trim() ? complete : info.verification_uri;
+      setVerificationUri(uri);
 
       // 复制到剪贴板
       try {
@@ -113,19 +119,22 @@ export function useAuth() {
         // clipboard is best-effort; do not block login flow
       }
 
-      // 打开验证页面
-      const complete = (info as any).verification_uri_complete as string | undefined;
-      const urlToOpen = complete && complete.trim() ? complete : info.verification_uri;
-      await OpenURL(urlToOpen);
-
       setIsLoading(false);
     } catch (error) {
       console.error('Device Flow 登录失败:', error);
       setIsLoading(false);
       setDeviceCode(null);
+      setVerificationUri(null);
       throw error;
     }
   }, []);
+
+  // 打开验证页面
+  const openVerificationPage = useCallback(async () => {
+    if (verificationUri) {
+      await OpenURL(verificationUri);
+    }
+  }, [verificationUri]);
 
   // 登出
   const logout = useCallback(async () => {
@@ -142,8 +151,10 @@ export function useAuth() {
     user,
     isLoading,
     deviceCode,
+    verificationUri,
     loginWithOAuth,
     loginWithDeviceFlow,
+    openVerificationPage,
     logout,
   };
 }

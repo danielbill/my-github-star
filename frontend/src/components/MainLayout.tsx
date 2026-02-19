@@ -116,6 +116,7 @@ export function MainLayout({
     user,
     isLoading: authLoading,
     deviceCode,
+    openVerificationPage,
     loginWithDeviceFlow,
     logout,
   } = useAuth();
@@ -147,6 +148,8 @@ export function MainLayout({
     if (deviceCode) {
       try {
         await navigator.clipboard.writeText(deviceCode);
+        setDeviceCodeModalOpen(false);
+        await openVerificationPage();
       } catch (err) {
         console.error('复制失败:', err);
       }
@@ -517,7 +520,7 @@ export function MainLayout({
               },
             }}
           >
-            复制验证码
+            复制验证码，打开浏览器，Ctrl+V粘贴即可
           </Button>
         </Stack>
       </Modal>
