@@ -6,7 +6,7 @@ import { MainLayout } from './components/MainLayout';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
 import { StarredSidebar } from './components/StarredSidebar';
-import { Settings } from './components/UserSettings';
+import { Settings } from './components/Settings';
 import { Repository, TimeRange } from './types';
 import './style.css';
 import './App.css';
