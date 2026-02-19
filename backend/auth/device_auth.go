@@ -56,6 +56,8 @@ func (s *DeviceFlowService) SetContext(ctx context.Context) {
 
 // StartLogin 开始 Device Flow 登录
 func (s *DeviceFlowService) StartLogin() (*DeviceCodeResponse, error) {
+	s.Cancel()
+
 	clientID := s.config.GetGitHubClientID()
 	// 如果配置文件没有 Client ID，使用内置的默认值
 	if clientID == "" {

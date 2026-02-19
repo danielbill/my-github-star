@@ -167,10 +167,10 @@ input:-webkit-autofill:focus {
 }
 
 /* 确保 Mantine 所有容器都使用深色背景 - 排除 Modal 相关 */
-div[class*="mantine"]:not([class*="Modal"]),
-section[class*="mantine"]:not([class*="Modal"]),
-nav[class*="mantine"]:not([class*="Modal"]),
-main[class*="mantine"]:not([class*="Modal"]) {
+div[class*="mantine"]:not([class*="Modal"]):not([class*="dropdown"]):not([class*="Menu"]),
+section[class*="mantine"]:not([class*="Modal"]):not([class*="dropdown"]),
+nav[class*="mantine"]:not([class*="Modal"]):not([class*="dropdown"]),
+main[class*="mantine"]:not([class*="Modal"]):not([class*="dropdown"]) {
   background-color: transparent !important;
 }
 

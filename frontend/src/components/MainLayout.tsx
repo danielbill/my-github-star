@@ -285,7 +285,7 @@ export function MainLayout({
 
             {/* 用户登录/头像 */}
             {isLoggedIn && user ? (   
-                 <Menu shadow="md" width={100} position="bottom-end">
+                 <Menu shadow="md" width={100} position="bottom">
                 <Menu.Target>
                   <UnstyledButton>
                     <Avatar
@@ -298,7 +298,7 @@ export function MainLayout({
                   </UnstyledButton>
                 </Menu.Target>
 
-                <Menu.Dropdown>
+                <Menu.Dropdown style={{ backgroundColor: '#2d3748' }}>
                   <Menu.Item
                     leftSection={<IconLogout size={14} />}
                     color="gray"
