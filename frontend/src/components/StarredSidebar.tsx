@@ -31,7 +31,7 @@ function StarredRepoItem({ repository }: StarredRepoItemProps) {
   return (
     <div className={classes.repoItem}>
       <Group gap="xs" align="center" justify="space-between" wrap="nowrap">
-        <Group gap="xs" align="center" wrap="nowrap">
+        <Group gap="xs" align="center" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
           <IconBrandGithub size={16} className={classes.repoIcon} />
           <Anchor
             href={repository.html_url}
@@ -40,16 +40,17 @@ function StarredRepoItem({ repository }: StarredRepoItemProps) {
             size="sm"
             className={classes.repoLink}
             lineClamp={1}
+            style={{ minWidth: 0 }}
           >
             {repository.full_name}
           </Anchor>
           <IconStarFilled size={13} className={classes.starIcon} />
-          <Text size="xs" c="var(--color-text-secondary)">
+          <Text size="xs" c="var(--color-text-secondary)" style={{ flexShrink: 0 }}>
             {formatStars(repository.stargazers_count)}
           </Text>
         </Group>
         {repository.stars_since && repository.stars_since > 0 && (
-          <Text size="xs" c="var(--color-text-secondary)">
+          <Text size="xs" c="var(--color-text-secondary)" style={{ flexShrink: 0 }}>
             +{formatStars(repository.stars_since)}
           </Text>
         )}
@@ -112,7 +113,6 @@ export function StarredSidebar() {
         backgroundColor: 'var(--color-bg-tertiary)',
         border: '1px solid var(--color-border-default)',
         height: '100%',
-        minHeight: 400,
         display: 'flex',
         flexDirection: 'column',
       }}

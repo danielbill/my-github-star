@@ -379,13 +379,13 @@ export function MainLayout({
       </header>
 
       <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '10px' }}>
+        <div style={{ margin: '0 auto', display: 'flex', gap: '10px', height: 'calc(100vh - 80px)' }}>
           {isHomePage ? (
             <>
-              <div style={{ flex: 6 }}>
+              <div style={{ flex: 6, minWidth: 0 }}>
                 {children}
               </div>
-              <div style={{ flex: 4 }}>
+              <div style={{ flex: 4, minWidth: 0 }}>
                 <StarredSidebar />
               </div>
             </>
