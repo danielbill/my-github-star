@@ -28,6 +28,7 @@ import {
   IconBug,
   IconNews,
   IconTrendingUp,
+  IconSettings,
 } from '@tabler/icons-react';
 import { TimeRange } from '../types';
 import { useAuth } from '../hooks/useAuth';
@@ -48,6 +49,7 @@ interface MainLayoutProps {
   cacheTime: string;
   refreshMessage: string;
   error: string;
+  onNavigate?: (path: string) => void;
 }
 
 const timeRangeOptions = [
@@ -66,6 +68,7 @@ export function MainLayout({
   cacheTime,
   refreshMessage,
   error,
+  onNavigate,
 }: MainLayoutProps) {
   const [viewScope, setViewScope] = useState<ViewScope>('all');
   const [currentPage, setCurrentPage] = useState<PageType>('trend');
@@ -261,6 +264,27 @@ export function MainLayout({
             </UnstyledButton>
 
             <div style={{ width: '100px' }} />
+
+            {/* Settings icon - left of login icon */}
+            <Tooltip label="设置" position="bottom-end" withArrow>
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                radius="sm"
+                onClick={() => onNavigate?.('/settings')}
+                styles={{
+                  root: {
+                    backgroundColor: '#3f4b5c',
+                    color: '#a0a0a0',
+                    '&:hover': {
+                      backgroundColor: '#4a576a',
+                    },
+                  },
+                }}
+              >
+                <IconSettings size={18} />
+              </ActionIcon>
+            </Tooltip>
 
       
     

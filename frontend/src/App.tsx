@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { LoadTrendingData, RefreshTrending } from '../wailsjs/go/backend/App';
 import { MainLayout } from './components/MainLayout';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
 import { StarredSidebar } from './components/StarredSidebar';
+import { Settings } from './components/Settings';
 import { Repository, TimeRange } from './types';
 import './style.css';
 import './App.css';
@@ -63,6 +64,18 @@ const theme = createTheme({
 });
 
 function App() {
+  return (
+    <MantineProvider theme={theme}>
+      <BrowserRouter>
+        <AppContent />
+      </BrowserRouter>
+    </MantineProvider>
+  );
+}
+
+function AppContent() {
+  const navigate = useNavigate();
+
   // 数据状态
   const [weeklyRepos, setWeeklyRepos] = useState<Repository[]>([]);
   const [monthlyRepos, setMonthlyRepos] = useState<Repository[]>([]);
@@ -135,38 +148,45 @@ function App() {
     loadInitialData();
   }, [loadInitialData]);
 
+  // 处理导航
+  const handleNavigate = useCallback((path: string) => {
+    navigate(path);
+  }, [navigate]);
+
   return (
-    <MantineProvider theme={theme}>
-      <BrowserRouter>
-        <Routes>
-          {/* 首页：项目列表 */}
-          <Route
-            path="/"
-            element={
-              <MainLayout
-                onRefresh={handleRefresh}
-                loading={loading}
-                refreshing={refreshing}
-                timeRange={timeRange}
-                onTimeRangeChange={setTimeRange}
-                repositoryCount={currentRepos.length}
-                cacheTime={currentCacheTime}
-                refreshMessage={refreshMessage}
-                error={error}
-              >
-                <ProjectList
-                  repositories={currentRepos}
-                  loading={loading}
-                  error={error}
-                />
-              </MainLayout>
-            }
-          />
-          {/* 项目详情页 */}
-          <Route path="/repo/:owner/:name" element={<ProjectDetail />} />
-        </Routes>
-      </BrowserRouter>
-    </MantineProvider>
+    <Routes>
+      {/* 首页：项目列表 */}
+      <Route
+        path="/"
+        element={
+          <MainLayout
+            onRefresh={handleRefresh}
+            loading={loading}
+            refreshing={refreshing}
+            timeRange={timeRange}
+            onTimeRangeChange={setTimeRange}
+            repositoryCount={currentRepos.length}
+            cacheTime={currentCacheTime}
+            refreshMessage={refreshMessage}
+            error={error}
+            onNavigate={handleNavigate}
+          >
+            <ProjectList
+              repositories={currentRepos}
+              loading={loading}
+              error={error}
+            />
+          </MainLayout>
+        }
+      />
+      {/* 设置页 */}
+      <Route
+        path="/settings"
+        element={<Settings onNavigate={handleNavigate} />}
+      />
+      {/* 项目详情页 */}
+      <Route path="/repo/:owner/:name" element={<ProjectDetail />} />
+    </Routes>
   );
 }
 

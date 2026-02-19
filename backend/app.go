@@ -166,6 +166,40 @@ func (a *App) OpenURL(url string) {
 	}
 }
 
+// OpenDirectoryDialog 打开目录选择对话框
+// 返回用户选择的目录路径，如果取消则返回空字符串
+func (a *App) OpenDirectoryDialog() (string, error) {
+	if a.ctx == nil {
+		return "", fmt.Errorf("上下文未初始化")
+	}
+
+	// 获取默认目录（用户配置的克隆目录或用户主目录）
+	defaultDir := a.appConfig.GetGitHubCloneDir()
+	if defaultDir == "" {
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			return "", fmt.Errorf("获取用户主目录失败: %w", err)
+		}
+		defaultDir = homeDir
+	}
+
+	// 打开目录选择对话框
+	selectedPath, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
+		Title:            "选择 GitHub 克隆目录",
+		DefaultDirectory: defaultDir,
+	})
+	if err != nil {
+		return "", fmt.Errorf("打开目录选择对话框失败: %w", err)
+	}
+
+	// 如果用户取消选择，返回空字符串
+	if selectedPath == "" {
+		return "", nil
+	}
+
+	return selectedPath, nil
+}
+
 // ========== 认证相关方法 ==========
 
 // StartLogin 开始 OAuth 登录流程
