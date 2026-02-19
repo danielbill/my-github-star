@@ -6,8 +6,9 @@ import {
   Text,
   Title,
   Stack,
-  Card,
   Flex,
+  ActionIcon,
+  Paper,
 } from '@mantine/core';
 import { IconFolder, IconArrowLeft } from '@tabler/icons-react';
 import {
@@ -20,19 +21,31 @@ interface SettingsProps {
   onNavigate?: (path: string) => void;
 }
 
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <Text size="sm" fw={600} c="#79C0E4" mb="xs">
+      {children}
+    </Text>
+  );
+}
+
+const sliderValues = [1, 2, 8, 24];
+
 export function Settings({ onNavigate }: SettingsProps) {
-  const [refreshInterval, setRefreshInterval] = useState<number>(0.5);
+  const [refreshInterval, setRefreshInterval] = useState<number>(1);
+  const [sliderPos, setSliderPos] = useState<number>(0);
   const [cloneDirectory, setCloneDirectory] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  // Load initial settings on mount
   useEffect(() => {
     const loadSettings = async () => {
       try {
         setLoading(true);
         const settings = await GetSettings();
         setRefreshInterval(settings.refresh_interval);
+        const idx = sliderValues.indexOf(settings.refresh_interval);
+        setSliderPos(idx >= 0 ? idx : 0);
         setCloneDirectory(settings.github_clone_dir);
         setError('');
       } catch (err) {
@@ -48,13 +61,14 @@ export function Settings({ onNavigate }: SettingsProps) {
     loadSettings();
   }, []);
 
-  // Update refresh interval
-  const updateRefreshInterval = async (value: number) => {
+  const updateRefreshInterval = async (pos: number) => {
     try {
+      const value = sliderValues[pos];
       await UpdateSettings({
         refresh_interval: value,
         github_clone_dir: cloneDirectory,
       });
+      setSliderPos(pos);
       setRefreshInterval(value);
       setError('');
     } catch (err) {
@@ -62,12 +76,9 @@ export function Settings({ onNavigate }: SettingsProps) {
       const errorMsg =
         err instanceof Error ? err.message : '保存失败';
       setError(errorMsg);
-      // Revert the value on error
-      setRefreshInterval(refreshInterval);
     }
   };
 
-  // Handle folder picker
   const handleFolderPicker = async () => {
     try {
       const selectedPath = await OpenDirectoryDialog();
@@ -87,7 +98,6 @@ export function Settings({ onNavigate }: SettingsProps) {
     }
   };
 
-  // Handle back navigation
   const handleBack = () => {
     if (onNavigate) {
       onNavigate('/');
@@ -100,7 +110,7 @@ export function Settings({ onNavigate }: SettingsProps) {
         style={{
           padding: '40px',
           textAlign: 'center',
-          color: '#a0a0a0',
+          color: '#6a7a90',
         }}
       >
         加载中...
@@ -109,101 +119,127 @@ export function Settings({ onNavigate }: SettingsProps) {
   }
 
   return (
-    <div style={{ maxWidth: 500, margin: '0 auto', paddingTop: '20px' }}>
-      <Card
-        p="lg"
-        radius="md"
-        withBorder
-        style={{
-          backgroundColor: '#212830',
-          borderColor: '#3f4b5c',
-        }}
-      >
-        <Flex justify="space-between" align="center" mb="md">
-
-          {onNavigate && (
-            <Button
-              leftSection={<IconArrowLeft size={16} />}
-              variant="subtle"
-              size="xs"
-              onClick={handleBack}
-              color="gray"
-            >
-              返回
-            </Button>
-          )}
-        </Flex>
-
-        <Stack spacing="md">
-          {/* Refresh Interval Section */}
-          <div>
-            <Text size="sm" c="#a0a0a0" mb="sm">
-              热点刷新间隔 ： {refreshInterval} 小时
-            </Text>
-            <Slider
-              min={0.1}
-              max={24}
-              marks={[
-                { value: 0.5, label: '30m' },
-                { value: 1, label: '1h' },
-                { value: 4, label: '4h' },
-                { value: 24, label: '24h' },
-              ]}
-              restrictToMarks
-              value={refreshInterval}
-              onChange={updateRefreshInterval}
-              styles={{
-                markLabel: { color: '#a0a0a0', fontSize: '12px' },
-              }}
-            />
-
-            {error && error.includes('刷新') && (
-              <Text c="red" size="sm" mt="xs">
-                {error}
-              </Text>
-            )}
-          </div>
-
-          {/* Clone Directory Section */}
-          <div>
-            <Text size="sm" c="#a0a0a0" mb="sm">
-              GitHub 克隆目录
-            </Text>
-            <TextInput
-              value={cloneDirectory}
-              readOnly
-              rightSection={
-                <Button
-                  leftSection={<IconFolder size={16} />}
-                  variant="subtle"
-                  size="xs"
-                  onClick={handleFolderPicker}
-                  color="gray"
-                >
-                  浏览
-                </Button>
-              }
-              styles={{
-                input: {
-                  backgroundColor: '#2a333f',
-                  borderColor: '#3f4b5c',
-                  color: '#a0a0a0',
+    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+      <Flex align="center" gap="md" mb="xl" mt="md">
+        {onNavigate && (
+          <ActionIcon
+            variant="subtle"
+            size="md"
+            radius="sm"
+            onClick={handleBack}
+            styles={{
+              root: {
+                backgroundColor: 'transparent',
+                color: '#6a7a90',
+                '&:hover': {
+                  backgroundColor: 'transparent',
+                  color: '#ffffff',
                 },
-              }}
-            />
-            {error && error.includes('目录') && (
-              <Text c="red" size="sm" mt="xs">
-                {error}
-              </Text>
-            )}
-            {error && !error.includes('刷新') && !error.includes('目录') && (
-              <Text c="red" size="sm" mt="xs">
-                {error}
-              </Text>
-            )}
-          </div>
-        </Stack>
-      </Card>
+              },
+            }}
+          >
+            <IconArrowLeft size={20} />
+          </ActionIcon>
+        )}
+
+      </Flex>
+
+      <Stack gap="xl">
+        <Paper
+          p="xl"
+          radius="md"
+          style={{
+            backgroundColor: '#212830',
+            border: '1px solid #3f4b5c',
+          }}
+        >
+          <SectionTitle>热点刷新间隔</SectionTitle>
+
+          <Slider
+            min={0}
+            max={3}
+            marks={[
+              { value: 0, label: '1小时' },
+              { value: 1, label: '2小时' },
+              { value: 2, label: '8小时' },
+              { value: 3, label: '24小时' },
+            ]}
+            restrictToMarks
+            value={sliderPos}
+            onChange={updateRefreshInterval}
+            styles={{
+              markLabel: { color: '#6a7a90', fontSize: '12px' },
+              track: { backgroundColor: '#3f4b5c' },
+              bar: { backgroundColor: '#79C0E4' },
+              thumb: {
+                borderColor: '#79C0E4',
+                backgroundColor: '#79C0E4',
+              },
+            }}
+          />
+
+          {error && error.includes('刷新') && (
+            <Text c="#ff6b6b" size="sm" mt="md">
+              {error}
+            </Text>
+          )}
+        </Paper>
+
+        <Paper
+          p="xl"
+          radius="md"
+          style={{
+            backgroundColor: '#212830',
+            border: '1px solid #3f4b5c',
+          }}
+        >
+          <SectionTitle>GitHub 克隆目录</SectionTitle>
+          <TextInput
+            value={cloneDirectory}
+            readOnly
+            placeholder="未设置"
+            rightSection={
+              <Button
+                leftSection={<IconFolder size={16} />}
+                variant="light"
+                size="xs"
+                onClick={handleFolderPicker}
+                styles={{
+                  root: {
+                    backgroundColor: '#3f4b5c',
+                    color: '#ffffff',
+                    '&:hover': {
+                      backgroundColor: '#4a576a',
+                    },
+                  },
+                }}
+              >
+                浏览
+              </Button>
+            }
+            styles={{
+              input: {
+                backgroundColor: '#2a333f',
+                borderColor: '#3f4b5c',
+                color: '#ffffff',
+                '&:focus': {
+                  borderColor: '#79C0E4',
+                },
+              },
+            }}
+          />
+          {error && error.includes('目录') && (
+            <Text c="#ff6b6b" size="sm" mt="md">
+              {error}
+            </Text>
+          )}
+          {error && !error.includes('刷新') && !error.includes('目录') && (
+            <Text c="#ff6b6b" size="sm" mt="md">
+              {error}
+            </Text>
+          )}
+        </Paper>
+      </Stack>
     </div>
   );
 }
