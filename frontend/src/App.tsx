@@ -6,7 +6,7 @@ import { MainLayout } from './components/MainLayout';
 import { ProjectList } from './components/ProjectList';
 import { ProjectDetail } from './components/ProjectDetail';
 import { StarredSidebar } from './components/StarredSidebar';
-import { Settings } from './components/Settings';
+import { Settings } from './components/UserSettings';
 import { Repository, TimeRange } from './types';
 import './style.css';
 import './App.css';
@@ -179,11 +179,26 @@ function AppContent() {
           </MainLayout>
         }
       />
-      {/* 设置页 */}
-      <Route
-        path="/settings"
-        element={<Settings onNavigate={handleNavigate} />}
-      />
+       {/* 设置页 */}
+       <Route
+         path="/settings"
+         element={
+           <MainLayout
+             onRefresh={handleRefresh}
+             loading={loading}
+             refreshing={refreshing}
+             timeRange={timeRange}
+             onTimeRangeChange={setTimeRange}
+             repositoryCount={currentRepos.length}
+             cacheTime={currentCacheTime}
+             refreshMessage={refreshMessage}
+             error={error}
+             onNavigate={handleNavigate}
+           >
+             <Settings />
+           </MainLayout>
+         }
+       />
       {/* 项目详情页 */}
       <Route path="/repo/:owner/:name" element={<ProjectDetail />} />
     </Routes>
