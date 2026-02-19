@@ -379,7 +379,7 @@ export function MainLayout({
       </header>
 
       <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
-        <div style={{ margin: '0 auto', display: 'flex', gap: '10px', height: 'calc(100vh - 80px)' }}>
+        <div style={{ margin: '0 auto', display: 'flex', gap: '10px' }}>
           {isHomePage ? (
             <>
               <div style={{ flex: 6, minWidth: 0 }}>
