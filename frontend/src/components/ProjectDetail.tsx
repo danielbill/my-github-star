@@ -1,47 +1,22 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, useNavigate, Link } from 'react-router-dom';
+import { useParams, useLocation } from 'react-router-dom';
 import {
-  Container,
   Paper,
-  Title,
   Text,
-  Badge,
   Group,
-  Button,
   Stack,
   Loader,
   Alert,
-  Breadcrumbs,
-  Anchor,
+  Box,
+  Flex,
+  Modal,
+  Button,
 } from '@mantine/core';
-import { IconStar, IconBrandGithub, IconArrowLeft } from '@tabler/icons-react';
+import { IconBrandGithub, IconStarFilled, IconDownload } from '@tabler/icons-react';
 import { GetRepositoryByID } from '../../wailsjs/go/backend/App';
 import { Repository } from '../types';
-import classes from './ProjectDetail.module.css';
+import { DetailLayout } from './DetailLayout';
 
-// 编程语言颜色映射
-const languageColors: Record<string, string> = {
-  JavaScript: '#f1e05a',
-  TypeScript: '#3178c6',
-  Python: '#3572A5',
-  Go: '#00ADD8',
-  Rust: '#dea584',
-  Java: '#b07219',
-  'C++': '#f34b7d',
-  C: '#555555',
-  'C#': '#239120',
-  Ruby: '#701516',
-  PHP: '#4F5D95',
-  Swift: '#F05138',
-  Kotlin: '#A97BFF',
-  Dart: '#00B4AB',
-  Vue: '#41b883',
-  HTML: '#e34c26',
-  CSS: '#563d7c',
-  Shell: '#89e051',
-};
-
-// 格式化星标数字
 function formatStars(stars: number): string {
   if (stars >= 1000000) {
     return `${(stars / 1000000).toFixed(1)}M`;
@@ -52,30 +27,21 @@ function formatStars(stars: number): string {
   return stars.toString();
 }
 
-// 获取语言颜色
-function getLanguageColor(language: string): string {
-  return languageColors[language] || '#8b949e';
-}
-
-// 格式化日期
-function formatDate(dateString: string): string {
-  if (!dateString) return '未知';
-  const date = new Date(dateString);
-  return date.toLocaleDateString('zh-CN', {
-    year: 'numeric',
-    month: 'long',
-    day: 'numeric',
-  });
-}
-
 export function ProjectDetail() {
   const { owner, name } = useParams<{ owner: string; name: string }>();
-  const navigate = useNavigate();
-  const [repository, setRepository] = useState<Repository | null>(null);
-  const [loading, setLoading] = useState(true);
+  const location = useLocation();
+  const locationState = location.state as { repository?: Repository } | null;
+
+  const [repository, setRepository] = useState<Repository | null>(
+    locationState?.repository || null
+  );
+  const [loading, setLoading] = useState(!locationState?.repository);
   const [error, setError] = useState('');
+  const [downloadModalOpen, setDownloadModalOpen] = useState(false);
 
   useEffect(() => {
+    if (repository) return;
+
     const fetchRepository = async () => {
       if (!owner || !name) {
         setError('缺少项目参数');
@@ -88,7 +54,7 @@ export function ProjectDetail() {
 
       try {
         const result = await GetRepositoryByID(owner, name);
-        setRepository(result);
+        setRepository(result as unknown as Repository);
       } catch (err) {
         console.error('获取项目详情失败:', err);
         setError(err instanceof Error ? err.message : '获取项目详情失败');
@@ -98,127 +64,172 @@ export function ProjectDetail() {
     };
 
     fetchRepository();
-  }, [owner, name]);
-
-  const handleGoBack = () => {
-    navigate('/');
-  };
-
-  const openGitHub = () => {
-    if (repository?.html_url) {
-      window.open(repository.html_url, '_blank');
-    }
-  };
+  }, [owner, name, repository]);
 
   if (loading) {
     return (
-      <Container size="lg" py="xl">
-        <Stack align="center">
+      <DetailLayout>
+        <Stack align="center" py="xl">
           <Loader size="lg" />
           <Text c="dimmed">加载项目详情中...</Text>
         </Stack>
-      </Container>
+      </DetailLayout>
     );
   }
 
   if (error || !repository) {
     return (
-      <Container size="lg" py="xl">
+      <DetailLayout>
         <Alert color="red" title="加载失败">
           {error || '项目未找到'}
         </Alert>
-        <Button mt="md" leftSection={<IconArrowLeft size={16} />} onClick={handleGoBack}>
-          返回列表
-        </Button>
-      </Container>
+      </DetailLayout>
     );
   }
 
+  const handleDownloadClick = () => {
+    setDownloadModalOpen(true);
+  };
+
+  const handleConfirmDownload = () => {
+    setDownloadModalOpen(false);
+    window.open(repository.html_url, '_blank');
+  };
+
   return (
-    <Container size="lg" py="xl">
-      {/* 面包屑导航 */}
-      <Breadcrumbs mb="md">
-        <Anchor component={Link} to="/">
-          首页
-        </Anchor>
-        <Text c="dimmed">{repository.full_name}</Text>
-      </Breadcrumbs>
-
-      <Paper shadow="sm" p="xl" radius="md" withBorder>
-        {/* 头部：名称和操作按钮 */}
-        <Group justify="space-between" align="flex-start" mb="lg">
-          <Stack gap="xs">
-            <Group gap="xs">
-              <IconBrandGithub size={24} />
-              <Title order={2}>{repository.full_name}</Title>
-            </Group>
-            {repository.language && (
-              <Badge
-                leftSection={
-                  <div
-                    style={{
-                      width: 10,
-                      height: 10,
-                      borderRadius: '50%',
-                      backgroundColor: getLanguageColor(repository.language),
-                    }}
-                  />
-                }
-                color="gray"
-                variant="light"
-                size="lg"
+    <DetailLayout>
+      <Paper
+        shadow="sm"
+        radius="md"
+        style={{
+          backgroundColor: 'var(--color-bg-primary)',
+          border: '1px solid var(--color-border-default)',
+          width: '70%',
+          margin: '0 auto',
+          height: 160,
+          display: 'flex',
+          flexDirection: 'column',
+          justifyContent: 'center',
+          padding: '10px 14px',
+        }}
+      >
+        <Flex justify="space-between" align="flex-start" gap="md">
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <Group gap="xs" align="center" mb={4}>
+              <IconBrandGithub size={16} style={{ color: 'var(--color-text-muted)', flexShrink: 0 }} />
+              <Text
+                fw={600}
+                size="sm"
+                style={{ color: 'var(--color-link)' }}
               >
-                {repository.language}
-              </Badge>
-            )}
-          </Stack>
+                {repository.full_name}
+              </Text>
+              <IconStarFilled size={13} style={{ color: 'var(--color-warning)', flexShrink: 0 }} />
+              <Text size="xs" c="var(--color-text-secondary)">
+                {formatStars(repository.stargazers_count)}
+              </Text>
+            </Group>
 
-          <Group gap="sm">
-            <Button
-              variant="light"
-              leftSection={<IconArrowLeft size={16} />}
-              onClick={handleGoBack}
-            >
-              返回列表
-            </Button>
-            <Button
-              leftSection={<IconBrandGithub size={16} />}
-              onClick={openGitHub}
-            >
-              在 GitHub 中打开
-            </Button>
-          </Group>
-        </Group>
-
-        {/* 描述 */}
-        {repository.description && (
-          <Text size="lg" mb="xl" className={classes.description}>
-            {repository.description}
-          </Text>
-        )}
-
-        {/* 统计信息 */}
-        <Group gap="xl" mb="xl">
-          <Group gap="xs">
-            <IconStar size={20} color="#e3b341" />
-            <Text size="lg" fw={500}>
-              {formatStars(repository.stargazers_count)} <Text span c="dimmed" fw={400}>Stars</Text>
+            <Text size="sm" c="var(--color-text-secondary)" style={{ lineHeight: 1.4 }}>
+              {repository.description || 'No description provided'}
             </Text>
-          </Group>
-        </Group>
 
-        {/* 时间信息 */}
-        <Stack gap="xs">
-          <Text size="sm">
-            <Text span c="dimmed">创建时间：</Text>
-            {formatDate(repository.created_at)}
-          </Text>
-          <Text size="sm">
-            <Text span c="dimmed">更新时间：</Text>
-            {formatDate(repository.updated_at)}
-          </Text>
-        </Stack>
+            <Group gap="xs" align="center" style={{ marginTop: 4 }}>
+              <IconDownload
+                size={18}
+                style={{ color: 'var(--color-link)', flexShrink: 0, cursor: 'pointer' }}
+                onClick={handleDownloadClick}
+              />
+              <Text
+                size="sm"
+                c="var(--color-link)"
+                style={{ cursor: 'pointer' }}
+                onClick={() => window.open(repository.html_url, '_blank')}
+              >
+                {repository.html_url}
+              </Text>
+            </Group>
+          </div>
+
+          {(repository.stars_since && repository.stars_since > 0) ||
+           (repository.stars_today && repository.stars_today > 0) ? (
+            <Text size="xs" c="var(--color-text-secondary)">
+              +{repository.stars_since || repository.stars_today || 0} stars
+            </Text>
+          ) : null}
+        </Flex>
       </Paper>
-    </Container>
+
+      <Box mt="lg" style={{ minHeight: 400 }}>
+      </Box>
+
+      <Modal
+        opened={downloadModalOpen}
+        onClose={() => setDownloadModalOpen(false)}
+        centered
+        size="lg"
+        overlayProps={{
+          opacity: 1,
+          color: '#000000',
+        }}
+        zIndex={9999}
+        styles={{
+          content: {
+            backgroundColor: '#212830',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7)',
+          },
+          header: {
+            backgroundColor: '#212830',
+          },
+          body: {
+            backgroundColor: '#212830',
+          },
+          close: {
+            color: '#6a7a90',
+            '&:hover': {
+              color: '#ffffff',
+              backgroundColor: '#3f4b5c',
+            },
+          },
+        }}
+      >
+        <Stack gap="md">
+          <Paper
+            p="md"
+            radius="md"
+            style={{
+              backgroundColor: '#1a1f26',
+              border: '0px solid #3f4b5c',
+            }}
+          >
+            <Stack align="center" gap="md">
+              <IconDownload size={48} style={{ color: '#79C0E4' }} />
+              <Text size="lg" fw={400} c="#dae7f5ff">
+               git clone {repository.html_url}
+              </Text>
+
+            </Stack>
+          </Paper>
+
+          <Button
+            leftSection={<IconDownload size={18} />}
+            onClick={handleConfirmDownload}
+            fullWidth
+            size="md"
+            styles={{
+              root: {
+                backgroundColor: '#79C0E4',
+                color: '#1a1f26',
+                '&:hover': {
+                  backgroundColor: '#5a9fc4',
+                },
+              },
+            }}
+          >
+            确认下载
+          </Button>
+        </Stack>
+      </Modal>
+    </DetailLayout>
   );
 }

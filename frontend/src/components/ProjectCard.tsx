@@ -10,7 +10,6 @@ interface ProjectCardProps {
   repository: Repository;
 }
 
-// 编程语言颜色映射
 const languageColors: Record<string, string> = {
   JavaScript: '#f1e05a',
   TypeScript: '#3178c6',
@@ -40,7 +39,6 @@ const languageColors: Record<string, string> = {
   Jupyter: '#F37626',
 };
 
-// 格式化星标数字
 function formatStars(stars: number): string {
   if (stars >= 1000000) {
     return `${(stars / 1000000).toFixed(1)}M`;
@@ -51,7 +49,6 @@ function formatStars(stars: number): string {
   return stars.toString();
 }
 
-// 获取语言颜色
 function getLanguageColor(language: string): string {
   return languageColors[language] || '#8b949e';
 }
@@ -60,22 +57,35 @@ export function ProjectCard({ repository }: ProjectCardProps) {
   const [owner, repoName] = repository.full_name.split('/');
 
   const handleTitleClick = (e: React.MouseEvent) => {
-    // 在默认浏览器打开 GitHub 页面
     OpenURL(repository.html_url);
-    // 同时也允许 React Router 导航（不阻止默认行为）
+  };
+
+  const repoData = {
+    id: repository.id,
+    name: repository.name,
+    full_name: repository.full_name,
+    owner: repository.owner,
+    description: repository.description,
+    language: repository.language,
+    stargazers_count: repository.stargazers_count,
+    stars_today: repository.stars_today,
+    stars_since: repository.stars_since,
+    forks_count: repository.forks_count,
+    html_url: repository.html_url,
+    created_at: repository.created_at,
+    updated_at: repository.updated_at,
   };
 
   return (
     <div className={classes.cardItem}>
       <Flex justify="space-between" align="flex-start" gap="md">
-        {/* 左侧内容 */}
         <div style={{ flex: 1, minWidth: 0 }}>
-          {/* 项目名称 */}
           <Group gap="xs" align="center" mb={4}>
             <IconBrandGithub size={16} className={classes.repoIcon} />
             <Anchor
               component={Link}
               to={`/repo/${owner}/${repoName}`}
+              state={{ repository: repoData }}
               onClick={handleTitleClick}
               fw={600}
               size="sm"
@@ -83,21 +93,17 @@ export function ProjectCard({ repository }: ProjectCardProps) {
             >
               {repository.full_name}
             </Anchor>
-            {/* 总星标数 */}
             <IconStarFilled size={13} className={classes.starIcon} />
             <Text size="xs" c="var(--color-text-secondary)">
               {formatStars(repository.stargazers_count)}
             </Text>
-
           </Group>
 
-          {/* 描述 */}
           <Text size="sm" c="var(--color-text-secondary)" className={classes.description}>
             {repository.description || 'No description provided'}
           </Text>
         </div>
 
-        {/* 新增星标数 */}
         {(repository.stars_since && repository.stars_since > 0) ||
          (repository.stars_today && repository.stars_today > 0) ? (
           <Text size="xs" c="var(--color-text-secondary)">
