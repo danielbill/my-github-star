@@ -102,7 +102,7 @@ func (c *Config) Load(sharedDir string) error {
 				GitHubCloneDir:  filepath.Join(homeDir, "github"),
 			},
 		}
-		return c.Save()
+		return c.saveLocked(true) // 已经持有锁，直接保存
 	}
 
 	// 读取配置文件
@@ -140,12 +140,19 @@ func (c *Config) Load(sharedDir string) error {
 
 // Save 保存配置文件
 func (c *Config) Save() error {
+	return c.saveLocked(false)
+}
+
+// saveLocked 保存配置文件，caller 控制是否加锁
+func (c *Config) saveLocked(locked bool) error {
 	if c.path == "" {
 		return fmt.Errorf("配置路径未设置")
 	}
 
-	c.mu.Lock()
-	defer c.mu.Unlock()
+	if !locked {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+	}
 
 	// 确保目录存在
 	dir := filepath.Dir(c.path)
@@ -283,7 +290,6 @@ func (c *Config) SetGitHubCloneDir(dir string) error {
 // UpdatePreferences 批量更新偏好设置（原子操作）
 func (c *Config) UpdatePreferences(pref PreferencesConfig) error {
 	c.mu.Lock()
-	defer c.mu.Unlock()
 
 	// 只更新非空字段
 	if pref.LoginMethod != "" {
@@ -296,5 +302,6 @@ func (c *Config) UpdatePreferences(pref PreferencesConfig) error {
 		c.config.Preferences.GitHubCloneDir = pref.GitHubCloneDir
 	}
 
+	c.mu.Unlock()
 	return c.Save()
 }
