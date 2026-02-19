@@ -26,12 +26,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. User can select a GitHub clone directory through folder picker dialog and see the path update
   4. Settings automatically save to configuration file when user modifies them
   5. Refresh interval changes apply to trending data auto-refresh logic immediately
-**Plans**: TBD
+**Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: [Brief description of first plan]
-- [ ] 01-02: [Brief description of second plan]
-- [ ] 01-03: [Brief description of third plan]
+- [ ] 01-01: Backend configuration and API for user settings (refresh interval, clone directory) with persistence
+- [ ] 01-02: Frontend settings page UI with auto-save and header navigation
 
 ## Progress
 
@@ -40,4 +39,4 @@ Phases execute in numeric order: 2 → 2.1 → 2.2 → 3 → 3.1 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. User Settings | 0/3 | Not started | - |
+| 1. User Settings | 0/2 | Not started | - |
