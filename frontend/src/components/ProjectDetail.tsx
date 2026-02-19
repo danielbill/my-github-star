@@ -13,7 +13,7 @@ import {
   Button,
 } from '@mantine/core';
 import { IconBrandGithub, IconStarFilled, IconDownload } from '@tabler/icons-react';
-import { GetRepositoryByID, CloneRepository } from '../../wailsjs/go/backend/App';
+import { GetRepositoryByID, CloneRepository, OpenURL } from '../../wailsjs/go/backend/App';
 import { Repository } from '../types';
 import { DetailLayout } from './DetailLayout';
 
@@ -148,7 +148,7 @@ export function ProjectDetail() {
                 size="sm"
                 c="var(--color-link)"
                 style={{ cursor: 'pointer' }}
-                onClick={() => window.open(repository.html_url, '_blank')}
+                onClick={() => OpenURL(repository.html_url)}
               >
                 {repository.html_url}
               </Text>
