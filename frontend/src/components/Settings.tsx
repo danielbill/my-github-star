@@ -23,7 +23,7 @@ interface SettingsProps {
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
-    <Text size="sm" fw={600} c="#79C0E4" mb="xs">
+    <Text size="md" fw={600} c="#79C0E4" mb="xs">
       {children}
     </Text>
   );
@@ -167,6 +167,7 @@ export function Settings({ onNavigate }: SettingsProps) {
             restrictToMarks
             value={sliderPos}
             onChange={updateRefreshInterval}
+            label={null}
             styles={{
               markLabel: { color: '#6a7a90', fontSize: '12px' },
               track: { backgroundColor: '#3f4b5c' },
