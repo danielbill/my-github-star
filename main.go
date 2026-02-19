@@ -21,6 +21,7 @@ func main() {
 		Title:  "github-star-app",
 		Width:  1024,
 		Height: 768,
+		Frameless: true,
 		AssetServer: &assetserver.Options{
 			Assets: assets,
 		},

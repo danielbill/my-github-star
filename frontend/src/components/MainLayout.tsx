@@ -28,7 +28,11 @@ import {
   IconNews,
   IconTrendingUp,
   IconSettings,
+  IconMinus,
+  IconSquare,
+  IconX,
 } from '@tabler/icons-react';
+import { WindowMinimise, WindowToggleMaximise, Quit } from '../../wailsjs/runtime/runtime';
 import { TimeRange } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { GetLogs } from '../../wailsjs/go/backend/App';
@@ -182,6 +186,7 @@ export function MainLayout({
         left: 0,
         right: 0,
         zIndex: 1000,
+        WebkitAppRegion: 'drag',
       }}>
         <div style={{
           maxWidth: 1280,
@@ -200,7 +205,7 @@ export function MainLayout({
           </div>
 
           {/* 时间切换 - 居中 - 只在首页显示 */}
-          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1, WebkitAppRegion: 'no-drag' }}>
             {isHomePage && (
               <SegmentedControl
                 data={timeRangeOptions}
@@ -237,7 +242,7 @@ export function MainLayout({
             )}
           </div>
 
-          <Flex gap="md" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
+          <Flex gap="md" align="center" style={{ width: 400, justifyContent: 'flex-end', WebkitAppRegion: 'no-drag' }}>
             {/* Trend 链接 - 首页 */}
             <HeaderIcon
               icon={<IconTrendingUp size={18} />}
@@ -253,7 +258,6 @@ export function MainLayout({
             />
 
       
-    
 
             {/* 日志按钮 - 暂时隐藏 */}
             {/* <Tooltip label="查看日志" position="bottom-end" withArrow>
@@ -277,17 +281,30 @@ export function MainLayout({
             </Tooltip> */}
 
             {/* 用户登录/头像 */}
-            {isLoggedIn && user ? (
-   
+            {isLoggedIn && user ? (   
+                 <Menu shadow="md" width={100} position="bottom-end">
+                <Menu.Target>
                   <UnstyledButton>
                     <Avatar
                       radius="md"
-                      size={24}
+                      size={28}
                       src={user.avatar_url}
                       alt={user.login}
                       style={{ cursor: 'pointer' }}
                     />
                   </UnstyledButton>
+                </Menu.Target>
+
+                <Menu.Dropdown>
+                  <Menu.Item
+                    leftSection={<IconLogout size={14} />}
+                    color="gray"
+                    onClick={handleLogoutClick}
+                  >
+                    登出
+                  </Menu.Item>
+                </Menu.Dropdown>
+              </Menu>
      
 
             ) : (
@@ -297,6 +314,61 @@ export function MainLayout({
                 disabled={authLoading}
               />
             )}
+
+            {/* 窗口控制按钮 */}
+            <Flex gap="xs" align="center" ml="sm">
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                radius="sm"
+                onClick={() => WindowMinimise()}
+                styles={{
+                  root: {
+                    color: '#6a7a90',
+                    '&:hover': {
+                      backgroundColor: '#3f4b5c',
+                      color: '#ffffff',
+                    },
+                  },
+                }}
+              >
+                <IconMinus size={16} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                radius="sm"
+                onClick={() => WindowToggleMaximise()}
+                styles={{
+                  root: {
+                    color: '#6a7a90',
+                    '&:hover': {
+                      backgroundColor: '#3f4b5c',
+                      color: '#ffffff',
+                    },
+                  },
+                }}
+              >
+                <IconSquare size={14} />
+              </ActionIcon>
+              <ActionIcon
+                variant="subtle"
+                size="md"
+                radius="sm"
+                onClick={() => Quit()}
+                styles={{
+                  root: {
+                    color: '#6a7a90',
+                    '&:hover': {
+                      backgroundColor: '#ff6b6b',
+                      color: '#ffffff',
+                    },
+                  },
+                }}
+              >
+                <IconX size={16} />
+              </ActionIcon>
+            </Flex>
           </Flex>
         </div>
       </header>
