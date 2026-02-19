@@ -6,6 +6,7 @@ import {
   Text,
   Stack,
   Paper,
+  ActionIcon,
 } from '@mantine/core';
 import { IconFolder } from '@tabler/icons-react';
 import {
@@ -77,8 +78,11 @@ export function Settings({ onNavigate }: SettingsProps) {
   };
 
   const handleFolderPicker = async () => {
+    console.log('>>> 点击了文件夹按钮！');
     try {
+      console.log('>>> 调用 OpenDirectoryDialog...');
       const selectedPath = await OpenDirectoryDialog();
+      console.log('>>> OpenDirectoryDialog 返回:', selectedPath);
       if (selectedPath) {
         await UpdateSettings({
           refresh_interval: refreshInterval,
@@ -88,7 +92,7 @@ export function Settings({ onNavigate }: SettingsProps) {
         setError('');
       }
     } catch (err) {
-      console.error('选择目录失败:', err);
+      console.error('>>> 错误:', err);
       const errorMsg =
         err instanceof Error ? err.message : '保存失败';
       setError(errorMsg);
@@ -163,49 +167,22 @@ export function Settings({ onNavigate }: SettingsProps) {
         >
           <SectionTitle>GitHub 克隆目录</SectionTitle>
           <TextInput
+            className="clone-directory-input"
             value={cloneDirectory}
             readOnly
             placeholder="未设置"
-            rightSection={
+            leftSection={
               <Button
-                leftSection={<IconFolder size={16} />}
-                variant="light"
+                variant="subtle"
                 size="xs"
                 onClick={handleFolderPicker}
-                styles={{
-                  root: {
-                    backgroundColor: '#3f4b5c',
-                    color: '#ffffff',
-                    '&:hover': {
-                      backgroundColor: '#4a576a',
-                    },
-                  },
-                }}
+                style={{ minWidth: 'auto', padding: '0 8px' }}
               >
-                浏览
+                <IconFolder size={16} />
               </Button>
             }
-            styles={{
-              input: {
-                backgroundColor: '#2a333f',
-                borderColor: '#3f4b5c',
-                color: '#ffffff',
-                '&:focus': {
-                  borderColor: '#79C0E4',
-                },
-              },
-            }}
           />
-          {error && error.includes('目录') && (
-            <Text c="#ff6b6b" size="sm" mt="md">
-              {error}
-            </Text>
-          )}
-          {error && !error.includes('刷新') && !error.includes('目录') && (
-            <Text c="#ff6b6b" size="sm" mt="md">
-              {error}
-            </Text>
-          )}
+       
         </Paper>
       </Stack>
     </div>

@@ -173,20 +173,9 @@ func (a *App) OpenDirectoryDialog() (string, error) {
 		return "", fmt.Errorf("上下文未初始化")
 	}
 
-	// 获取默认目录（用户配置的克隆目录或用户主目录）
-	defaultDir := a.appConfig.GetGitHubCloneDir()
-	if defaultDir == "" {
-		homeDir, err := os.UserHomeDir()
-		if err != nil {
-			return "", fmt.Errorf("获取用户主目录失败: %w", err)
-		}
-		defaultDir = homeDir
-	}
-
-	// 打开目录选择对话框
+	// 直接打开目录选择对话框，不设置默认目录
 	selectedPath, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-		Title:            "选择 GitHub 克隆目录",
-		DefaultDirectory: defaultDir,
+		Title: "选择 GitHub 克隆目录",
 	})
 	if err != nil {
 		return "", fmt.Errorf("打开目录选择对话框失败: %w", err)

@@ -199,3 +199,13 @@ div[class*="popover"] {
   color: #212830 !important;
   font-weight: 600 !important;
 }
+
+/* GitHub 克隆目录输入框特殊样式 */
+.clone-directory-input .mantine-TextInput-input {
+  background-color: #212830 !important;
+  border: none !important;
+}
+
+.clone-directory-input .mantine-TextInput-wrapper {
+  background-color: #212830 !important;
+}
