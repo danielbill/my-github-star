@@ -244,7 +244,7 @@ export function MainLayout({
             )}
           </div>
 
-          <Flex gap="md" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
+          <Flex gap={12} align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
             {/* Trend 链接 - 首页 */}
             <HeaderIcon
               icon={<IconTrendingUp size={18} />}
@@ -289,7 +289,7 @@ export function MainLayout({
                   <UnstyledButton>
                     <Avatar
                       radius="md"
-                      size={28}
+                      size={24}
                       src={user.avatar_url}
                       alt={user.login}
                       style={{ cursor: 'pointer' }}
@@ -317,8 +317,11 @@ export function MainLayout({
               />
             )}
 
+            {/* 分隔线 */}
+            <div style={{ width: 1, height: 16, backgroundColor: '#3f4b5c', margin: '0 8px' }} />
+
             {/* 窗口控制按钮 */}
-            <Flex gap="xs" align="center" ml="sm">
+            <Flex gap={3} align="center">
               <ActionIcon
                 variant="subtle"
                 size="md"
@@ -351,7 +354,7 @@ export function MainLayout({
                   },
                 }}
               >
-                <IconSquare size={14} />
+                <IconSquare size={12} />
               </ActionIcon>
               <ActionIcon
                 variant="subtle"
@@ -368,7 +371,7 @@ export function MainLayout({
                   },
                 }}
               >
-                <IconX size={16} />
+                <IconX size={14} />
               </ActionIcon>
             </Flex>
           </Flex>
@@ -376,7 +379,7 @@ export function MainLayout({
       </header>
 
       <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '18px' }}>
+        <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '10px' }}>
           {isHomePage ? (
             <>
               <div style={{ flex: 6 }}>
