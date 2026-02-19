@@ -130,7 +130,6 @@ input:-webkit-autofill:focus {
 
 .mantine-Select-dropdown,
 .mantine-MultiSelect-dropdown,
-.mantine-Modal-content,
 .mantine-Paper-root,
 .mantine-Menu-dropdown,
 .mantine-Popover-dropdown {
@@ -167,11 +166,11 @@ input:-webkit-autofill:focus {
   color: var(--color-text-muted) !important;
 }
 
-/* 确保 Mantine 所有容器都使用深色背景 */
-div[class*="mantine"],
-section[class*="mantine"],
-nav[class*="mantine"],
-main[class*="mantine"] {
+/* 确保 Mantine 所有容器都使用深色背景 - 排除 Modal 相关 */
+div[class*="mantine"]:not([class*="Modal"]),
+section[class*="mantine"]:not([class*="Modal"]),
+nav[class*="mantine"]:not([class*="Modal"]),
+main[class*="mantine"]:not([class*="Modal"]) {
   background-color: transparent !important;
 }
 

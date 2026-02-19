@@ -436,30 +436,86 @@ export function MainLayout({
       <Modal
         opened={deviceCodeModalOpen}
         onClose={() => setDeviceCodeModalOpen(false)}
-        title="输入验证码"
+
         centered
+        size="lg"
+        overlayProps={{
+          opacity: 1,
+          color: '#000000',
+        }}
+        zIndex={9999}
+        styles={{
+          content: {
+            backgroundColor: '#212830',
+            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.7)',
+          },
+
+          header: {
+            backgroundColor: '#212830',
+
+          },
+          body: {
+            backgroundColor: '#212830',
+          },
+          close: {
+            color: '#6a7a90',
+            '&:hover': {
+              color: '#ffffff',
+              backgroundColor: '#3f4b5c',
+            },
+          },
+        }}
       >
-        <Stack>
-          <Text size="sm">
-            浏览器已打开 GitHub 授权页面。请在页面上输入以下验证码：
-          </Text>
-          <Code
+        <Stack gap="lg">
+
+          <Paper
+            p="xl"
+            radius="md"
             style={{
-              fontSize: 24,
-              textAlign: 'center',
-              letterSpacing: 4,
-              padding: 16,
+              backgroundColor: '#1a1f26',
+              border: '0px solid #3f4b5c',
+
             }}
           >
-            {deviceCode}
-          </Code>
-          <Text size="xs" c="dimmed">
-            验证码已复制到剪贴板，也可以点击按钮重新复制
-          </Text>
+            <Flex justify="center" gap="sm">
+              {(deviceCode || '').split('').map((char, index) => (
+                <div
+                  key={index}
+                  style={{
+                    width: char === '-' ? 'auto' : 60,
+                    height: 70,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    backgroundColor: '#212830',
+                    border: char === '-' ? 'none' : '2px solid #4a576a',
+                    borderRadius: 8,
+                    fontSize: 28,
+                    fontWeight: 700,
+                    color: char === '-' ? '#6a7a90' : '#79C0E4',
+                    fontFamily: 'monospace',
+                  }}
+                >
+                  {char}
+                </div>
+              ))}
+            </Flex>
+          </Paper>
+
           <Button
-            leftSection={<IconCopy size={16} />}
+            leftSection={<IconCopy size={18} />}
             onClick={handleCopyUserCode}
-            variant="light"
+            fullWidth
+            size="md"
+            styles={{
+              root: {
+                backgroundColor: '#79C0E4',
+                color: '#1a1f26',
+                '&:hover': {
+                  backgroundColor: '#5fa8d3',
+                },
+              },
+            }}
           >
             复制验证码
           </Button>
