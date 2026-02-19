@@ -78,15 +78,17 @@
 
 ## Traceability
 
-| REQ-ID | Description | Phase |
-|---------|-------------|--------|
-| UI-01 | 设置入口 | Phase 1 |
-| UI-02 | 设置页面组件 | Phase 1 |
-| UI-03 | 刷新间隔配置 | Phase 1 |
-| UI-04 | 克隆目录配置 | Phase 1 |
-| UI-05 | 设置页面导航 | Phase 1 |
-| PERS-01 | 保存刷新间隔 | Phase 1 |
-| PERS-02 | 保存克隆目录 | Phase 1 |
-| API-01 | 读取配置方法 | Phase 1 |
-| API-02 | 更新配置方法 | Phase 1 |
-| API-03 | 集成刷新间隔 | Phase 1 |
+| REQ-ID | Description | Phase | Status |
+|---------|-------------|--------|--------|
+| UI-01 | 设置入口 | Phase 1 | Pending |
+| UI-02 | 设置页面组件 | Phase 1 | Pending |
+| UI-03 | 刷新间隔配置 | Phase 1 | Pending |
+| UI-04 | 克隆目录配置 | Phase 1 | Pending |
+| UI-05 | 设置页面导航 | Phase 1 | Pending |
+| PERS-01 | 保存刷新间隔 | Phase 1 | Pending |
+| PERS-02 | 保存克隆目录 | Phase 1 | Pending |
+| API-01 | 读取配置方法 | Phase 1 | Pending |
+| API-02 | 更新配置方法 | Phase 1 | Pending |
+| API-03 | 集成刷新间隔 | Phase 1 | Pending |
+
+**Coverage:** 11/11 requirements mapped (100%)
