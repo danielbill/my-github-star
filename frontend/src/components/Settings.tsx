@@ -109,7 +109,7 @@ export function Settings({ onNavigate }: SettingsProps) {
   }
 
   return (
-    <div style={{ maxWidth: 800, margin: '0 auto', paddingTop: '20px' }}>
+    <div style={{ maxWidth: 500, margin: '0 auto', paddingTop: '20px' }}>
       <Card
         p="lg"
         radius="md"
@@ -120,9 +120,7 @@ export function Settings({ onNavigate }: SettingsProps) {
         }}
       >
         <Flex justify="space-between" align="center" mb="md">
-          <Title order={3} c="#a0a0a0">
-            设置
-          </Title>
+
           {onNavigate && (
             <Button
               leftSection={<IconArrowLeft size={16} />}
@@ -140,7 +138,7 @@ export function Settings({ onNavigate }: SettingsProps) {
           {/* Refresh Interval Section */}
           <div>
             <Text size="sm" c="#a0a0a0" mb="sm">
-              刷新间隔
+              热点刷新间隔 ： {refreshInterval} 小时
             </Text>
             <Slider
               min={0.1}
@@ -158,9 +156,7 @@ export function Settings({ onNavigate }: SettingsProps) {
                 markLabel: { color: '#a0a0a0', fontSize: '12px' },
               }}
             />
-            <Text size="xs" c="#6a7a90" mt="xs">
-              当前设置: {refreshInterval} 小时
-            </Text>
+
             {error && error.includes('刷新') && (
               <Text c="red" size="sm" mt="xs">
                 {error}

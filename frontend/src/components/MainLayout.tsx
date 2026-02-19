@@ -8,7 +8,6 @@ import {
   Menu,
   Text,
   UnstyledButton,
-  Tooltip,
   Alert,
   Modal,
   Stack,
@@ -35,6 +34,41 @@ import { useAuth } from '../hooks/useAuth';
 import { GetLogs } from '../../wailsjs/go/backend/App';
 import { StarredSidebar } from './StarredSidebar';
 import { useLocation } from 'react-router-dom';
+
+interface HeaderIconProps {
+  icon: React.ReactNode;
+  isActive?: boolean;
+  onClick?: () => void;
+  disabled?: boolean;
+}
+
+function HeaderIcon({ icon, isActive = false, onClick, disabled }: HeaderIconProps) {
+  return (
+    <ActionIcon
+      variant="subtle"
+      size="md"
+      radius="sm"
+      onClick={onClick}
+      disabled={disabled}
+      styles={{
+        root: {
+          backgroundColor: 'transparent',
+          color: isActive ? '#79C0E4' : '#6a7a90',
+          '&:hover': {
+            backgroundColor: 'transparent',
+            color: isActive ? '#79C0E4' : '#ffffff',
+          },
+          '&:disabled': {
+            opacity: 0.5,
+            cursor: 'not-allowed',
+          },
+        },
+      }}
+    >
+      {icon}
+    </ActionIcon>
+  );
+}
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -203,74 +237,20 @@ export function MainLayout({
             )}
           </div>
 
-          <Flex gap="xs" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
+          <Flex gap="md" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
             {/* Trend 链接 - 首页 */}
-            <UnstyledButton
+            <HeaderIcon
+              icon={<IconTrendingUp size={18} />}
+              isActive={isHomePage}
               onClick={() => onNavigate?.('/')}
-              style={{
-                color: '#6a7a90',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                transition: 'all 0.2s',
-                background: 'transparent',
-              }}
-            >
-              <span style={{
-                borderBottom: isHomePage ? '2px solid #6a7a90' : '2px solid transparent',
-                paddingBottom: '2px',
-              }}>
-                Trend
-              </span>
-            </UnstyledButton>
-
-            {/* News 链接 - 暂时保留但不做跳转 */}
-            <UnstyledButton
-              style={{
-                color: '#6a7a90',
-                fontSize: '14px',
-                fontWeight: 600,
-                textDecoration: 'none',
-                cursor: 'pointer',
-                padding: '4px 8px',
-                borderRadius: '4px',
-                transition: 'all 0.2s',
-                background: 'transparent',
-              }}
-            >
-              <span style={{
-                borderBottom: '2px solid transparent',
-                paddingBottom: '2px',
-              }}>
-                News
-              </span>
-            </UnstyledButton>
-
-            <div style={{ width: '100px' }} />
+            />
 
             {/* Settings icon - left of login icon */}
-            <Tooltip label="设置" position="bottom-end" withArrow>
-              <ActionIcon
-                variant="subtle"
-                size="md"
-                radius="sm"
-                onClick={() => onNavigate?.('/settings')}
-                styles={{
-                  root: {
-                    backgroundColor: '#3f4b5c',
-                    color: '#a0a0a0',
-                    '&:hover': {
-                      backgroundColor: '#4a576a',
-                    },
-                  },
-                }}
-              >
-                <IconSettings size={18} />
-              </ActionIcon>
-            </Tooltip>
+            <HeaderIcon
+              icon={<IconSettings size={18} />}
+              isActive={isSettingsPage}
+              onClick={() => onNavigate?.('/settings')}
+            />
 
       
     
@@ -298,57 +278,24 @@ export function MainLayout({
 
             {/* 用户登录/头像 */}
             {isLoggedIn && user ? (
-              <Menu shadow="md" width={120} position="bottom-end">
-                <Menu.Target>
+   
                   <UnstyledButton>
                     <Avatar
                       radius="md"
-                      size={28}
+                      size={24}
                       src={user.avatar_url}
                       alt={user.login}
                       style={{ cursor: 'pointer' }}
                     />
                   </UnstyledButton>
-                </Menu.Target>
+     
 
-                <Menu.Dropdown>
-                  <Menu.Item    
-                    color="gray"
-                    onClick={() => window.open(`https://github.com/${user.login}`, '_blank')}
-                  >
-                    GitHub主页
-                  </Menu.Item>
-
-                  <Menu.Item
-                    leftSection={<IconLogout size={14} />}
-                    color="gray"
-                    onClick={handleLogoutClick}
-                  >
-                    登出
-                  </Menu.Item>
-                </Menu.Dropdown>
-              </Menu>
             ) : (
-              <Tooltip label="点击登录" position="bottom-end" withArrow>
-                <ActionIcon
-                  variant="subtle"
-                  size="md"
-                  radius="sm"
-                  onClick={handleLoginDeviceFlow}
-                  disabled={authLoading}
-                  styles={{
-                    root: {
-                      backgroundColor: '#3f4b5c',
-                      color: '#a0a0a0',
-                      '&:hover': {
-                        backgroundColor: '#4a576a',
-                      },
-                    },
-                  }}
-                >
-                  <IconBrandGithub size={20} />
-                </ActionIcon>
-              </Tooltip>
+              <HeaderIcon
+                icon={<IconBrandGithub size={20} />}
+                onClick={handleLoginDeviceFlow}
+                disabled={authLoading}
+              />
             )}
           </Flex>
         </div>
