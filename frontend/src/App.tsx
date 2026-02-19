@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
+import { HashRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { LoadTrendingData, RefreshTrending } from '../wailsjs/go/backend/App';
 import { MainLayout } from './components/MainLayout';
@@ -66,9 +66,9 @@ const theme = createTheme({
 function App() {
   return (
     <MantineProvider theme={theme}>
-      <BrowserRouter>
+      <HashRouter>
         <AppContent />
-      </BrowserRouter>
+      </HashRouter>
     </MantineProvider>
   );
 }
