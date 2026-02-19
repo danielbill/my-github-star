@@ -204,6 +204,7 @@ div[class*="popover"] {
 .clone-directory-input .mantine-TextInput-input {
   background-color: #212830 !important;
   border: none !important;
+  color: #6a7a90 !important;
 }
 
 .clone-directory-input .mantine-TextInput-wrapper {

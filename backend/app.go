@@ -173,9 +173,17 @@ func (a *App) OpenDirectoryDialog() (string, error) {
 		return "", fmt.Errorf("上下文未初始化")
 	}
 
-	// 直接打开目录选择对话框，不设置默认目录
+	// 设置默认目录为用户主目录（确保存在）
+	var defaultDir string
+	homeDir, err := os.UserHomeDir()
+	if err == nil {
+		defaultDir = homeDir
+	}
+
+	// 打开目录选择对话框
 	selectedPath, err := runtime.OpenDirectoryDialog(a.ctx, runtime.OpenDialogOptions{
-		Title: "选择 GitHub 克隆目录",
+		Title:            "选择 GitHub 克隆目录",
+		DefaultDirectory: defaultDir,
 	})
 	if err != nil {
 		return "", fmt.Errorf("打开目录选择对话框失败: %w", err)

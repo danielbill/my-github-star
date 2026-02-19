@@ -6,7 +6,7 @@ import {
   Text,
   Stack,
   Paper,
-  ActionIcon,
+  Group,
 } from '@mantine/core';
 import { IconFolder } from '@tabler/icons-react';
 import {
@@ -114,7 +114,7 @@ export function Settings({ onNavigate }: SettingsProps) {
   }
 
   return (
-    <div style={{ maxWidth: 600, margin: '0 auto' }}>
+    <div style={{ maxWidth: 500, margin: '0 auto', padding: '10px' }}>
       <Stack gap="xl">
         <Paper
           p="xl"
@@ -129,18 +129,11 @@ export function Settings({ onNavigate }: SettingsProps) {
           <Slider
             min={0}
             max={3}
-            marks={[
-              { value: 0, label: '1小时' },
-              { value: 1, label: '2小时' },
-              { value: 2, label: '4小时' },
-              { value: 3, label: '8小时' },
-            ]}
             restrictToMarks
             value={sliderPos}
             onChange={updateRefreshInterval}
             label={null}
             styles={{
-              markLabel: { color: '#6a7a90', fontSize: '12px' },
               track: { backgroundColor: '#3f4b5c' },
               bar: { backgroundColor: '#79C0E4' },
               thumb: {
@@ -149,6 +142,19 @@ export function Settings({ onNavigate }: SettingsProps) {
               },
             }}
           />
+          
+          <Group justify="space-between" mt="xs">
+            {['1小时', '2小时', '4小时', '8小时'].map((label, idx) => (
+              <Text
+                key={idx}
+                size="xs"
+                c={sliderPos === idx ? '#79C0E4' : '#6a7a90'}
+                fw={sliderPos === idx ? 600 : 400}
+              >
+                {label}
+              </Text>
+            ))}
+          </Group>
 
           {error && error.includes('刷新') && (
             <Text c="#ff6b6b" size="sm" mt="md">
@@ -174,11 +180,11 @@ export function Settings({ onNavigate }: SettingsProps) {
             leftSection={
               <Button
                 variant="subtle"
-                size="xs"
+                size="md"
                 onClick={handleFolderPicker}
-                style={{ minWidth: 'auto', padding: '0 8px' }}
+                style={{ minWidth: 'auto', padding: '0 2px' }}
               >
-                <IconFolder size={16} />
+                <IconFolder size={22} />
               </Button>
             }
           />
