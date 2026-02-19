@@ -1,10 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import { Paper, Text, Stack, Group, Anchor, ScrollArea, LoadingOverlay, ActionIcon, Tooltip } from '@mantine/core';
 import { IconStarFilled, IconBrandGithub, IconRefresh } from '@tabler/icons-react';
+import { Link } from 'react-router-dom';
 import { Repository } from '../types';
 import { LoadUserStarRepo, RefreshUserStarRepo } from '../../wailsjs/go/backend/App';
 import { useAuth } from '../hooks/useAuth';
-import { OpenURL } from '../../wailsjs/go/backend/App';
 import classes from './StarredSidebar.module.css';
 
 // 格式化星标数字
@@ -23,9 +23,22 @@ interface StarredRepoItemProps {
 }
 
 function StarredRepoItem({ repository }: StarredRepoItemProps) {
-  const handleTitleClick = (e: React.MouseEvent) => {
-    e.preventDefault();
-    OpenURL(repository.html_url);
+  const [owner, repoName] = repository.full_name.split('/');
+
+  const repoData = {
+    id: repository.id,
+    name: repository.name,
+    full_name: repository.full_name,
+    owner: repository.owner,
+    description: repository.description,
+    language: repository.language,
+    stargazers_count: repository.stargazers_count,
+    stars_today: repository.stars_today,
+    stars_since: repository.stars_since,
+    forks_count: repository.forks_count,
+    html_url: repository.html_url,
+    created_at: repository.created_at,
+    updated_at: repository.updated_at,
   };
 
   return (
@@ -34,8 +47,9 @@ function StarredRepoItem({ repository }: StarredRepoItemProps) {
         <Group gap="xs" align="center" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
           <IconBrandGithub size={16} className={classes.repoIcon} />
           <Anchor
-            href={repository.html_url}
-            onClick={handleTitleClick}
+            component={Link}
+            to={`/repo/${owner}/${repoName}`}
+            state={{ repository: repoData }}
             fw={600}
             size="sm"
             className={classes.repoLink}

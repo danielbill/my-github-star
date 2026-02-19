@@ -3,7 +3,6 @@ import { Badge, Group, Text, Anchor, Button, Flex } from '@mantine/core';
 import { IconBrandGithub, IconStarFilled, IconGitFork } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { Repository } from '../types';
-import { OpenURL } from '../../wailsjs/go/backend/App';
 import classes from './ProjectCard.module.css';
 
 interface ProjectCardProps {
@@ -56,10 +55,6 @@ function getLanguageColor(language: string): string {
 export function ProjectCard({ repository }: ProjectCardProps) {
   const [owner, repoName] = repository.full_name.split('/');
 
-  const handleTitleClick = (e: React.MouseEvent) => {
-    OpenURL(repository.html_url);
-  };
-
   const repoData = {
     id: repository.id,
     name: repository.name,
@@ -86,7 +81,6 @@ export function ProjectCard({ repository }: ProjectCardProps) {
               component={Link}
               to={`/repo/${owner}/${repoName}`}
               state={{ repository: repoData }}
-              onClick={handleTitleClick}
               fw={600}
               size="sm"
               className={classes.repoLink}
