@@ -189,7 +189,6 @@ export function MainLayout({
         left: 0,
         right: 0,
         zIndex: 1000,
-        WebkitAppRegion: 'drag',
       }}>
         <div style={{
           maxWidth: 1280,
@@ -208,7 +207,7 @@ export function MainLayout({
           </div>
 
           {/* 时间切换 - 居中 - 只在首页显示 */}
-          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1, WebkitAppRegion: 'no-drag' }}>
+          <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
             {isHomePage && (
               <SegmentedControl
                 data={timeRangeOptions}
@@ -245,7 +244,7 @@ export function MainLayout({
             )}
           </div>
 
-          <Flex gap="md" align="center" style={{ width: 400, justifyContent: 'flex-end', WebkitAppRegion: 'no-drag' }}>
+          <Flex gap="md" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
             {/* Trend 链接 - 首页 */}
             <HeaderIcon
               icon={<IconTrendingUp size={18} />}

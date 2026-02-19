@@ -181,6 +181,22 @@ main[class*="mantine"]:not([class*="Modal"]):not([class*="dropdown"]) {
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3) !important;
 }
 
+/* Header 拖拽区域 - Wails 使用 --wails-draggable */
+.custom-header {
+  --wails-draggable: drag;
+}
+
+/* 交互元素保持可点击 */
+.custom-header button,
+.custom-header a,
+.custom-header [role="button"],
+.custom-header .mantine-ActionIcon-root,
+.custom-header .mantine-Menu-root,
+.custom-header .mantine-Avatar-root,
+.custom-header .mantine-SegmentedControl-root {
+  --wails-draggable: no-drag;
+}
+
 /* 下拉弹窗特别处理 */
 div[class*="dropdown"],
 div[class*="popover"] {
