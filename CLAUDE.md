@@ -11,7 +11,7 @@ GitHub Star Tracker 是一个使用 Wails v2（Go 后端 + React 前端）构建
 ### 开发
 ```bash
 # 以开发模式运行（支持热重载）
-wails dev
+wails dev 
 
 # 安装前端依赖
 cd frontend && npm install

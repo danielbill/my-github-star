@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useNavigate, useLocation } from 'react-router-dom';
 import { MantineProvider, createTheme } from '@mantine/core';
 import { LoadTrendingData, RefreshTrending } from '../wailsjs/go/backend/App';
 import { MainLayout } from './components/MainLayout';
@@ -75,6 +75,20 @@ function App() {
 
 function AppContent() {
   const navigate = useNavigate();
+  const location = useLocation();
+
+  useEffect(() => {
+    const isHomePage = location.pathname === '/';
+    const isSettingsPage = location.pathname === '/settings';
+    
+    if (isHomePage) {
+      document.title = 'Github热点';
+    } else if (isSettingsPage) {
+      document.title = '设置';
+    } else {
+      document.title = 'Github热点';
+    }
+  }, [location]);
 
   // 数据状态
   const [weeklyRepos, setWeeklyRepos] = useState<Repository[]>([]);

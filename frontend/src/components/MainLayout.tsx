@@ -34,9 +34,7 @@ import { TimeRange } from '../types';
 import { useAuth } from '../hooks/useAuth';
 import { GetLogs } from '../../wailsjs/go/backend/App';
 import { StarredSidebar } from './StarredSidebar';
-
-type ViewScope = 'all' | 'mine';
-type PageType = 'trend' | 'news';
+import { useLocation } from 'react-router-dom';
 
 interface MainLayoutProps {
   children: React.ReactNode;
@@ -70,8 +68,7 @@ export function MainLayout({
   error,
   onNavigate,
 }: MainLayoutProps) {
-  const [viewScope, setViewScope] = useState<ViewScope>('all');
-  const [currentPage, setCurrentPage] = useState<PageType>('trend');
+  const location = useLocation();
   const [loginError, setLoginError] = useState<string | null>(null);
   const [deviceCodeModalOpen, setDeviceCodeModalOpen] = useState(false);
   const [logsModalOpen, setLogsModalOpen] = useState(false);
@@ -84,6 +81,9 @@ export function MainLayout({
     loginWithDeviceFlow,
     logout,
   } = useAuth();
+
+  const isHomePage = location.pathname === '/';
+  const isSettingsPage = location.pathname === '/settings';
 
   const handleTimeRangeChange = (value: string | string[]) => {
     const newValue = Array.isArray(value) ? value[0] : value;
@@ -133,19 +133,6 @@ export function MainLayout({
     }
   };
 
-  const handleTrendClick = () => {
-    setCurrentPage('trend');
-  };
-
-  const handleNewsClick = () => {
-    setCurrentPage('news');
-  };
-
-  const handleRefreshClick = () => {
-    if (currentPage === 'trend') {
-      onRefresh();
-    }
-  };
 
   return (
     <div style={{ minHeight: '100vh', backgroundColor: '#212830' }}>
@@ -174,13 +161,13 @@ export function MainLayout({
         }}>
           <div style={{ width: 400, minWidth: 400 }}>
             <Title order={4} c="#6a7a90" style={{ margin: 0, lineHeight: 1.2, whiteSpace: 'nowrap' }}>
-              GitHub Stars
+              {isHomePage ? 'Github热点' : isSettingsPage ? '设置' : 'GitHub Stars'}
             </Title>
           </div>
 
-          {/* 时间切换 - 居中 */}
+          {/* 时间切换 - 居中 - 只在首页显示 */}
           <div style={{ position: 'absolute', left: '50%', transform: 'translateX(-50%)', zIndex: 1 }}>
-            {currentPage === 'trend' && (
+            {isHomePage && (
               <SegmentedControl
                 data={timeRangeOptions}
                 value={timeRange}
@@ -217,9 +204,9 @@ export function MainLayout({
           </div>
 
           <Flex gap="xs" align="center" style={{ width: 400, justifyContent: 'flex-end' }}>
-            {/* Trend 链接 */}
+            {/* Trend 链接 - 首页 */}
             <UnstyledButton
-              onClick={handleTrendClick}
+              onClick={() => onNavigate?.('/')}
               style={{
                 color: '#6a7a90',
                 fontSize: '14px',
@@ -233,16 +220,15 @@ export function MainLayout({
               }}
             >
               <span style={{
-                borderBottom: currentPage === 'trend' ? '2px solid #6a7a90' : '2px solid transparent',
+                borderBottom: isHomePage ? '2px solid #6a7a90' : '2px solid transparent',
                 paddingBottom: '2px',
               }}>
                 Trend
               </span>
             </UnstyledButton>
 
-            {/* News 链接 */}
+            {/* News 链接 - 暂时保留但不做跳转 */}
             <UnstyledButton
-              onClick={handleNewsClick}
               style={{
                 color: '#6a7a90',
                 fontSize: '14px',
@@ -256,7 +242,7 @@ export function MainLayout({
               }}
             >
               <span style={{
-                borderBottom: currentPage === 'news' ? '2px solid #6a7a90' : '2px solid transparent',
+                borderBottom: '2px solid transparent',
                 paddingBottom: '2px',
               }}>
                 News
@@ -370,21 +356,18 @@ export function MainLayout({
 
       <main style={{ paddingTop: '62px', paddingLeft: '18px', paddingRight: '18px', paddingBottom: '18px' }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', display: 'flex', gap: '18px' }}>
-          {currentPage === 'trend' ? (
+          {isHomePage ? (
             <>
               <div style={{ flex: 6 }}>
                 {children}
               </div>
               <div style={{ flex: 4 }}>
-                {/* 我的星标列表 - 登录后显示 */}
                 <StarredSidebar />
               </div>
             </>
           ) : (
-            <div style={{ flex: 1, textAlign: 'center', padding: '100px 0' }}>
-              <IconNews size={64} c="#4a576a" style={{ marginBottom: '20px' }} />
-              <Text size="xl" c="#a0a0a0">News 页面即将推出</Text>
-              <Text size="sm" c="#6a7a90" mt="sm">敬请期待...</Text>
+            <div style={{ flex: 1 }}>
+              {children}
             </div>
           )}
         </div>

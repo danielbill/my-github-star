@@ -93,9 +93,6 @@ wails build
 # 安装前端依赖
 cd frontend && npm install
 
-# 前端开发服务器（通常由 wails dev 自动调用）
-cd frontend && npm run dev
-
 # 前端构建
 cd frontend && npm run build
 ```
