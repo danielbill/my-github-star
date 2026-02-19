@@ -4,7 +4,6 @@ import {
   TextInput,
   Button,
   Text,
-  Title,
   Stack,
   Paper,
 } from '@mantine/core';
@@ -15,7 +14,9 @@ import {
   OpenDirectoryDialog,
 } from '../../wailsjs/go/backend/App';
 
-interface SettingsProps {}
+interface SettingsProps {
+  onNavigate?: (path: string) => void;
+}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -27,7 +28,7 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 const sliderValues = [1, 2, 4, 8];
 
-export function Settings({}: SettingsProps) {
+export function Settings({ onNavigate }: SettingsProps) {
   const [refreshInterval, setRefreshInterval] = useState<number>(1);
   const [sliderPos, setSliderPos] = useState<number>(0);
   const [cloneDirectory, setCloneDirectory] = useState<string>('');
@@ -91,12 +92,6 @@ export function Settings({}: SettingsProps) {
       const errorMsg =
         err instanceof Error ? err.message : '保存失败';
       setError(errorMsg);
-    }
-  };
-
-  const handleBack = () => {
-    if (onNavigate) {
-      onNavigate('/');
     }
   };
 
