@@ -30,7 +30,7 @@ function StarredRepoItem({ repository }: StarredRepoItemProps) {
 
   return (
     <div className={classes.repoItem}>
-      <Group gap="xs" align="center" justify="space-between" wrap="nowrap" mb="xs">
+      <Group gap="xs" align="center" justify="space-between" wrap="nowrap">
         <Group gap="xs" align="center" wrap="nowrap">
           <IconBrandGithub size={16} className={classes.repoIcon} />
           <Anchor
@@ -159,7 +159,7 @@ export function StarredSidebar() {
             </Text>
           )}
 
-          <Stack gap="xs">
+          <Stack gap={2}>
             {repositories.map((repo) => (
               <StarredRepoItem key={repo.id} repository={repo} />
             ))}

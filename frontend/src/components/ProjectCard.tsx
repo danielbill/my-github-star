@@ -71,7 +71,7 @@ export function ProjectCard({ repository }: ProjectCardProps) {
         {/* 左侧内容 */}
         <div style={{ flex: 1, minWidth: 0 }}>
           {/* 项目名称 */}
-          <Group gap="xs" align="center" mb="xs">
+          <Group gap="xs" align="center" mb={4}>
             <IconBrandGithub size={16} className={classes.repoIcon} />
             <Anchor
               component={Link}

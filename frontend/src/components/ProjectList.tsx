@@ -98,7 +98,7 @@ export function ProjectList({ repositories, loading, error }: ProjectListProps) 
   }
 
   return (
-    <Stack gap="sm">
+    <Stack gap={6}>
       {repositories.map((repo) => (
         <ProjectCard key={repo.id} repository={repo} />
       ))}
