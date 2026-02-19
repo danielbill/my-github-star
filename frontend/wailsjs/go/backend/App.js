@@ -18,6 +18,10 @@ export function GetRepositoryByID(arg1, arg2) {
   return window['go']['backend']['App']['GetRepositoryByID'](arg1, arg2);
 }
 
+export function GetSettings() {
+  return window['go']['backend']['App']['GetSettings']();
+}
+
 export function GetStarredRepositories() {
   return window['go']['backend']['App']['GetStarredRepositories']();
 }
@@ -48,6 +52,10 @@ export function LoadUserStarRepo() {
 
 export function Logout() {
   return window['go']['backend']['App']['Logout']();
+}
+
+export function OpenDirectoryDialog() {
+  return window['go']['backend']['App']['OpenDirectoryDialog']();
 }
 
 export function OpenURL(arg1) {
@@ -84,4 +92,8 @@ export function StartDeviceFlowLogin() {
 
 export function StartLogin() {
   return window['go']['backend']['App']['StartLogin']();
+}
+
+export function UpdateSettings(arg1) {
+  return window['go']['backend']['App']['UpdateSettings'](arg1);
 }

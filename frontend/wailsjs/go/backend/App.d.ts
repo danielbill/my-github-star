@@ -12,6 +12,8 @@ export function GetLogs():Promise<string>;
 
 export function GetRepositoryByID(arg1:string,arg2:string):Promise<models.Repository>;
 
+export function GetSettings():Promise<backend.Settings>;
+
 export function GetStarredRepositories():Promise<Array<models.Repository>>;
 
 export function GetTrendingRepositories(arg1:string):Promise<Array<models.Repository>>;
@@ -27,6 +29,8 @@ export function LoadTrendingData():Promise<backend.LoadTrendingDataResponse>;
 export function LoadUserStarRepo():Promise<Array<models.Repository>>;
 
 export function Logout():Promise<void>;
+
+export function OpenDirectoryDialog():Promise<string>;
 
 export function OpenURL(arg1:string):Promise<void>;
 
@@ -45,3 +49,5 @@ export function Shutdown(arg1:context.Context):Promise<void>;
 export function StartDeviceFlowLogin():Promise<backend.DeviceFlowInfo>;
 
 export function StartLogin():Promise<string>;
+
+export function UpdateSettings(arg1:backend.Settings):Promise<void>;
