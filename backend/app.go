@@ -34,8 +34,8 @@ type App struct {
 	sharedDir         string // 记录 shared 目录路径
 
 	// 刷新计时器（控制刷新频率，60分钟内只能刷新一次）
-	lastRefresh   time.Time
-	refreshMutex  sync.Mutex
+	lastRefresh  time.Time
+	refreshMutex sync.Mutex
 }
 
 // NewApp 创建新的应用实例
@@ -259,6 +259,47 @@ func (a *App) GetLogs() string {
 	return logger.GetLogs()
 }
 
+// ========== 用户设置相关方法 ==========
+
+// Settings 用户设置
+type Settings struct {
+	RefreshInterval float64 `json:"refresh_interval"`
+	GitHubCloneDir  string  `json:"github_clone_dir"`
+}
+
+// GetSettings 获取当前用户设置
+func (a *App) GetSettings() (*Settings, error) {
+	return &Settings{
+		RefreshInterval: a.appConfig.GetRefreshInterval(),
+		GitHubCloneDir:  a.appConfig.GetGitHubCloneDir(),
+	}, nil
+}
+
+// UpdateSettings 更新用户设置
+func (a *App) UpdateSettings(settings Settings) error {
+	// 验证刷新间隔
+	if settings.RefreshInterval < 0.1 || settings.RefreshInterval > 24.0 {
+		return fmt.Errorf("刷新间隔必须在 0.1 到 24 小时之间")
+	}
+
+	// 验证克隆目录
+	if settings.GitHubCloneDir == "" {
+		return fmt.Errorf("GitHub 克隆目录不能为空")
+	}
+
+	// 更新配置
+	pref := config.PreferencesConfig{
+		RefreshInterval: settings.RefreshInterval,
+		GitHubCloneDir:  settings.GitHubCloneDir,
+	}
+
+	if err := a.appConfig.UpdatePreferences(pref); err != nil {
+		return fmt.Errorf("更新设置失败: %w", err)
+	}
+
+	return nil
+}
+
 // ========== 趋势数据相关方法（使用数据库缓存）==========
 
 // TrendingData 趋势数据响应
@@ -326,9 +367,13 @@ func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
 		return nil, fmt.Errorf("数据库未初始化")
 	}
 
-	// 检查计时器（60分钟内不能刷新）
+	// 获取配置的刷新间隔
+	refreshInterval := a.appConfig.GetRefreshInterval()
+	refreshDuration := time.Duration(refreshInterval*3600) * time.Second
+
+	// 检查计时器
 	a.refreshMutex.Lock()
-	if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < time.Hour {
+	if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < refreshDuration {
 		a.refreshMutex.Unlock()
 		// 返回缓存数据
 		repos, _ := a.db.GetUserStarRepos()
@@ -452,10 +497,10 @@ func (a *App) convertModelsToUserStarRepos(repos []models.Repository) []database
 
 // RefreshTrendingResponse 刷新趋势数据的响应
 type RefreshTrendingResponse struct {
-	Success  bool         `json:"success"`
-	Message  string       `json:"message"`
-	Weekly   TrendingData `json:"weekly"`
-	Monthly  TrendingData `json:"monthly"`
+	Success bool         `json:"success"`
+	Message string       `json:"message"`
+	Weekly  TrendingData `json:"weekly"`
+	Monthly TrendingData `json:"monthly"`
 }
 
 // RefreshTrending 手动刷新趋势数据（同时爬取 weekly 和 monthly）
@@ -464,10 +509,14 @@ func (a *App) RefreshTrending() (*RefreshTrendingResponse, error) {
 		return nil, fmt.Errorf("数据库未初始化")
 	}
 
-	// 检查计时器（60分钟内不能刷新）
+	// 获取配置的刷新间隔
+	refreshInterval := a.appConfig.GetRefreshInterval()
+	refreshDuration := time.Duration(refreshInterval*3600) * time.Second
+
+	// 检查计时器
 	a.refreshMutex.Lock()
-	if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < time.Hour {
-		remaining := time.Hour - time.Since(a.lastRefresh)
+	if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < refreshDuration {
+		remaining := refreshDuration - time.Since(a.lastRefresh)
 		a.refreshMutex.Unlock()
 		// 返回缓存数据
 		response := &RefreshTrendingResponse{
@@ -584,16 +633,16 @@ func (a *App) convertEntriesToModels(entries []database.TrendingEntry) []models.
 	repos := make([]models.Repository, len(entries))
 	for i, entry := range entries {
 		repos[i] = models.Repository{
-			ID:               entry.GithubID,
-			FullName:         entry.FullName,
-			Name:             entry.Name,
-			Owner:            entry.Owner,
-			Description:      entry.Description,
-			StargazersCount:  entry.StargazersCount,
-			StarsSince:       entry.StarsSince,
-			HTMLURL:          entry.HTMLURL,
-			CreatedAt:        models.JSONDateTime{Time: entry.CachedAt},
-			UpdatedAt:        models.JSONDateTime{Time: entry.CachedAt},
+			ID:              entry.GithubID,
+			FullName:        entry.FullName,
+			Name:            entry.Name,
+			Owner:           entry.Owner,
+			Description:     entry.Description,
+			StargazersCount: entry.StargazersCount,
+			StarsSince:      entry.StarsSince,
+			HTMLURL:         entry.HTMLURL,
+			CreatedAt:       models.JSONDateTime{Time: entry.CachedAt},
+			UpdatedAt:       models.JSONDateTime{Time: entry.CachedAt},
 		}
 	}
 	return repos
@@ -614,30 +663,34 @@ func (a *App) autoLoadInitialData(ctx context.Context) {
 		return
 	}
 
+	// 获取配置的刷新间隔
+	refreshInterval := a.appConfig.GetRefreshInterval()
+	refreshDuration := time.Duration(refreshInterval*3600) * time.Second
+
 	now := time.Now()
 	var elapsed time.Duration
 	if cachedAt.IsZero() {
-		elapsed = time.Hour // 无数据，视为已过1小时
+		elapsed = refreshDuration // 无数据，视为已过刷新间隔
 	} else {
 		elapsed = now.Sub(cachedAt)
 	}
 
 	// 初始化计时器
 	a.refreshMutex.Lock()
-	if elapsed >= time.Hour {
-		// 超过1小时或无数据，可以立即刷新，计时器从现在开始
+	if elapsed >= refreshDuration {
+		// 超过刷新间隔或无数据，可以立即刷新，计时器从现在开始
 		a.lastRefresh = time.Time{} // 零值，表示可以刷新
 		a.refreshMutex.Unlock()
 
 		runtime.LogPrintf(ctx, "缓存已过期或无数据，开始自动爬取...")
 		go a.doRefresh(ctx)
 	} else {
-		// 未满1小时，设置计时器为剩余时间
+		// 未满刷新间隔，设置计时器为剩余时间
 		// lastRefresh 设置为 (now - elapsed)，这样 time.Since(lastRefresh) = elapsed
 		a.lastRefresh = now.Add(-elapsed)
 		a.refreshMutex.Unlock()
 
-		remaining := time.Hour - elapsed
+		remaining := refreshDuration - elapsed
 		runtime.LogPrintf(ctx, "缓存有效，距下次刷新还需 %.0f 分钟", remaining.Minutes())
 	}
 }
@@ -659,4 +712,3 @@ func (a *App) doRefresh(ctx context.Context) {
 	a.lastRefresh = time.Now()
 	a.refreshMutex.Unlock()
 }
-
