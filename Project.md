@@ -97,6 +97,10 @@ cd frontend && npm install
 cd frontend && npm run build
 ```
 
+### 禁止
+禁止使用 `npm run dev` 调试应用！
+
+
 
 ## 开发注意事项
 
