@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"sync"
 	"time"
@@ -749,4 +750,35 @@ func (a *App) doRefresh(ctx context.Context) {
 	a.refreshMutex.Lock()
 	a.lastRefresh = time.Now()
 	a.refreshMutex.Unlock()
+}
+
+// CloneRepository 克隆仓库到本地
+// 在新终端窗口中执行 git clone 命令
+func (a *App) CloneRepository(repoURL string) error {
+	cloneDir := a.appConfig.GetGitHubCloneDir()
+	if cloneDir == "" {
+		return fmt.Errorf("未设置克隆目录，请先在设置中配置 GitHub 克隆目录")
+	}
+
+	if a.ctx == nil {
+		return fmt.Errorf("上下文未初始化")
+	}
+
+	runtime.LogPrintf(a.ctx, "克隆仓库: %s -> %s", repoURL, cloneDir)
+
+	err := a.cloneInTerminal(repoURL, cloneDir)
+	if err != nil {
+		runtime.LogPrintf(a.ctx, "克隆失败: %v", err)
+		return err
+	}
+
+	runtime.LogPrintf(a.ctx, "已打开终端执行克隆命令")
+	return nil
+}
+
+// cloneInTerminal 在新终端窗口中执行克隆命令
+func (a *App) cloneInTerminal(repoURL, cloneDir string) error {
+	cmd := exec.Command("powershell", "-Command",
+		fmt.Sprintf("Start-Process powershell -ArgumentList '-NoExit', '-Command', 'cd \"%s\"; git clone \"%s\"'", cloneDir, repoURL))
+	return cmd.Start()
 }

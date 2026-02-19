@@ -13,7 +13,7 @@ import {
   Button,
 } from '@mantine/core';
 import { IconBrandGithub, IconStarFilled, IconDownload } from '@tabler/icons-react';
-import { GetRepositoryByID } from '../../wailsjs/go/backend/App';
+import { GetRepositoryByID, CloneRepository } from '../../wailsjs/go/backend/App';
 import { Repository } from '../types';
 import { DetailLayout } from './DetailLayout';
 
@@ -91,9 +91,13 @@ export function ProjectDetail() {
     setDownloadModalOpen(true);
   };
 
-  const handleConfirmDownload = () => {
+  const handleConfirmDownload = async () => {
     setDownloadModalOpen(false);
-    window.open(repository.html_url, '_blank');
+    try {
+      await CloneRepository(repository.html_url);
+    } catch (err) {
+      console.error('克隆失败:', err);
+    }
   };
 
   return (

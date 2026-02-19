@@ -4,6 +4,8 @@ import {models} from '../models';
 import {backend} from '../models';
 import {context} from '../models';
 
+export function CloneRepository(arg1:string):Promise<void>;
+
 export function ForceRefreshUserStarRepo():Promise<Array<models.Repository>>;
 
 export function GetCurrentUser():Promise<models.User>;
