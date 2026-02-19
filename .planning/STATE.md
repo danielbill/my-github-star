@@ -34,6 +34,7 @@ Progress: [░░░░░░░░░░] 0%
 - Trend: -
 
 *Updated after each plan completion*
+| Phase 01-user-settings P01-01 | 3min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -41,8 +42,8 @@ Progress: [░░░░░░░░░░] 0%
 
 Decisions are logged in PROJECT.md Key Decisions table.
 Recent decisions affecting current work:
-
-None yet.
+- [Phase 01-user-settings]: Default settings: 0.5 hours refresh interval, ~/github clone directory — 0.5 hours balances freshness and API rate limits; ~/github is platform-aware default
+- [Phase 01-user-settings]: saveLocked() pattern: Extracted internal saveLocked() method to support both locked and unlocked contexts, preventing deadlock in config Save/Load — Load() holds lock when calling Save(), causing recursive lock acquisition and deadlock
 
 ### Pending Todos
 

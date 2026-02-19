@@ -36,30 +36,30 @@
 
 ### Settings Persistence
 
-- [ ] **PERS-01**: 保存刷新间隔到配置文件
+- [x] **PERS-01**: 保存刷新间隔到配置文件
   - 配置文件：shared/app-config.toml
   - 配置字段：添加到 AppConfig 结构
   - 保存时机：用户修改后自动保存
 
-- [ ] **PERS-02**: 保存 GitHub 克隆目录到配置文件
+- [x] **PERS-02**: 保存 GitHub 克隆目录到配置文件
   - 配置文件：shared/app-config.toml
   - 配置字段：添加到 AppConfig 结构
   - 保存时机：用户修改后自动保存
 
 ### Settings Backend API
 
-- [ ] **API-01**: 创建后端配置读取方法
+- [x] **API-01**: 创建后端配置读取方法
   - 方法名：GetSettings()
   - 返回值：包含刷新间隔和克隆目录的配置对象
   - 位置：backend/app.go
 
-- [ ] **API-02**: 创建后端配置更新方法
+- [x] **API-02**: 创建后端配置更新方法
   - 方法名：UpdateSettings(settings)
   - 参数：包含刷新间隔和克隆目录的配置对象
   - 位置：backend/app.go
   - 验证：参数有效性验证（间隔范围、路径有效性）
 
-- [ ] **API-03**: 集成刷新间隔到趋势数据刷新逻辑
+- [x] **API-03**: 集成刷新间隔到趋势数据刷新逻辑
   - 读取配置文件中的刷新间隔
   - 应用到趋势数据刷新定时器
   - 位置：backend/app.go
