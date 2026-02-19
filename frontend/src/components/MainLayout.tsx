@@ -189,7 +189,7 @@ export function MainLayout({
         left: 0,
         right: 0,
         zIndex: 1000,
-      }}>
+      }} onDoubleClick={() => WindowToggleMaximise()}>
         <div style={{
           maxWidth: 1280,
           margin: '0 auto',
