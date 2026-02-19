@@ -29,8 +29,8 @@ Decimal phases appear between their surrounding integers in numeric order.
 **Plans**: 2 plans
 
 Plans:
-- [ ] 01-01: Backend configuration and API for user settings (refresh interval, clone directory) with persistence
-- [ ] 01-02: Frontend settings page UI with auto-save and header navigation
+- [x] 01-01: Backend configuration and API for user settings (refresh interval, clone directory) with persistence
+- [x] 01-02: Frontend settings page UI with auto-save and header navigation
 
 ## Progress
 
@@ -39,4 +39,4 @@ Phases execute in numeric order: 2 → 2.1 → 2.2 → 3 → 3.1 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. User Settings | 1/2 | In Progress|  |
+| 1. User Settings | 2/2 | Complete | 2026-02-19 |

@@ -6,30 +6,30 @@
 
 ### Settings UI
 
-- [ ] **UI-01**: 在应用主界面添加设置入口
+- [x] **UI-01**: 在应用主界面添加设置入口
   - 入口位置：登录图标左侧
   - 使用 Tabler Icons 的设置图标（IconSettings）
   - 图标样式与现有登录图标保持一致
 
-- [ ] **UI-02**: 创建设置页面组件
+- [x] **UI-02**: 创建设置页面组件
   - 页面标题：Header 显示"设置"
   - 页面布局：使用 Mantine 的 Card 或 Stack 组件
   - 响应式设计：适配不同窗口大小
 
-- [ ] **UI-03**: 刷新间隔配置项
+- [x] **UI-03**: 刷新间隔配置项
   - 控件类型：数字输入框（NumberInput）
   - 默认值：0.5 小时
   - 单位显示：在输入框后显示"小时"标签
   - 验证规则：最小值 0.1 小时，最大值 24 小时
 
-- [ ] **UI-04**: GitHub 克隆目录配置项
+- [x] **UI-04**: GitHub 克隆目录配置项
   - 控件类型：文件夹路径输入 + 打开目录按钮
   - 默认值：d:\github
   - 打开目录按钮：点击后弹出文件夹选择对话框
   - 选择后更新：用户选择的目录路径自动填充到输入框
   - 跨平台：适配 Windows/macOS/Linux 路径格式
 
-- [ ] **UI-05**: 设置页面导航
+- [x] **UI-05**: 设置页面导航
   - 点击设置图标时切换到设置视图
   - Header 标题从当前视图标题切换为"设置"
   - 支持返回主视图
@@ -80,15 +80,16 @@
 
 | REQ-ID | Description | Phase | Status |
 |---------|-------------|--------|--------|
-| UI-01 | 设置入口 | Phase 1 | Pending |
-| UI-02 | 设置页面组件 | Phase 1 | Pending |
-| UI-03 | 刷新间隔配置 | Phase 1 | Pending |
-| UI-04 | 克隆目录配置 | Phase 1 | Pending |
-| UI-05 | 设置页面导航 | Phase 1 | Pending |
-| PERS-01 | 保存刷新间隔 | Phase 1 | Pending |
-| PERS-02 | 保存克隆目录 | Phase 1 | Pending |
-| API-01 | 读取配置方法 | Phase 1 | Pending |
-| API-02 | 更新配置方法 | Phase 1 | Pending |
-| API-03 | 集成刷新间隔 | Phase 1 | Pending |
+| UI-01 | 设置入口 | Phase 1 | Complete |
+| UI-02 | 设置页面组件 | Phase 1 | Complete |
+| UI-03 | 刷新间隔配置 | Phase 1 | Complete |
+| UI-04 | 克隆目录配置 | Phase 1 | Complete |
+| UI-05 | 设置页面导航 | Phase 1 | Complete |
+| PERS-01 | 保存刷新间隔 | Phase 1 | Complete |
+| PERS-02 | 保存克隆目录 | Phase 1 | Complete |
+| API-01 | 读取配置方法 | Phase 1 | Complete |
+| API-02 | 更新配置方法 | Phase 1 | Complete |
+| API-03 | 集成刷新间隔 | Phase 1 | Complete |
 
 **Coverage:** 11/11 requirements mapped (100%)
+**Complete:** 11/11 requirements (100%)
