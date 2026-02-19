@@ -7,7 +7,7 @@ import {
   StartDeviceFlowLogin,
   IsLoggedIn,
   GetCurrentUser,
-  RefreshUserStarRepo,
+  ForceRefreshUserStarRepo,
 } from '../../wailsjs/go/backend/App';
 import { GitHubUser, DeviceFlowInfo } from '../types';
 import { ClipboardSetText } from '../../wailsjs/runtime/runtime';
@@ -45,19 +45,21 @@ export function useAuth() {
   useEffect(() => {
     const handleLoginSuccess = async (userData: any) => {
       console.log('[useAuth] 收到 login-success 事件:', userData);
-      setIsLoggedIn(true);
-      setUser(userData as GitHubUser);
-      setIsLoading(false);
-      setDeviceCode(null);
       
-      // 登录成功后自动刷新星标仓库到数据库
+      // 先强制刷新星标仓库到数据库，再更新状态
       try {
-        console.log('[useAuth] 自动刷新星标仓库...');
-        await RefreshUserStarRepo();
+        console.log('[useAuth] 强制刷新星标仓库...');
+        await ForceRefreshUserStarRepo();
         console.log('[useAuth] 星标仓库刷新完成');
       } catch (err) {
         console.error('[useAuth] 刷新星标仓库失败:', err);
       }
+      
+      // 刷新完成后再更新状态，触发 UI 更新
+      setIsLoggedIn(true);
+      setUser(userData as GitHubUser);
+      setIsLoading(false);
+      setDeviceCode(null);
     };
 
     console.log('[useAuth] 注册 login-success 事件监听器');

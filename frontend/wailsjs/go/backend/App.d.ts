@@ -4,6 +4,8 @@ import {models} from '../models';
 import {backend} from '../models';
 import {context} from '../models';
 
+export function ForceRefreshUserStarRepo():Promise<Array<models.Repository>>;
+
 export function GetCurrentUser():Promise<models.User>;
 
 export function GetLoginMethod():Promise<string>;

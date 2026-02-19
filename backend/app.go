@@ -394,28 +394,35 @@ func (a *App) LoadUserStarRepo() ([]models.Repository, error) {
 
 // RefreshUserStarRepo 刷新用户星标仓库（从 GitHub API 获取并保存到数据库）
 func (a *App) RefreshUserStarRepo() ([]models.Repository, error) {
+	return a.refreshUserStarRepoWithForce(false)
+}
+
+// ForceRefreshUserStarRepo 强制刷新用户星标仓库（登录后调用，忽略缓存）
+func (a *App) ForceRefreshUserStarRepo() ([]models.Repository, error) {
+	return a.refreshUserStarRepoWithForce(true)
+}
+
+// refreshUserStarRepoWithForce 刷新用户星标仓库，可强制刷新
+func (a *App) refreshUserStarRepoWithForce(force bool) ([]models.Repository, error) {
 	if a.db == nil {
 		return nil, fmt.Errorf("数据库未初始化")
 	}
 
-	// 获取配置的刷新间隔
-	refreshInterval := a.appConfig.GetRefreshInterval()
-	refreshDuration := time.Duration(refreshInterval*3600) * time.Second
+	if !force {
+		refreshInterval := a.appConfig.GetRefreshInterval()
+		refreshDuration := time.Duration(refreshInterval*3600) * time.Second
 
-	// 检查计时器
-	a.refreshMutex.Lock()
-	if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < refreshDuration {
+		a.refreshMutex.Lock()
+		if !a.lastRefresh.IsZero() && time.Since(a.lastRefresh) < refreshDuration {
+			a.refreshMutex.Unlock()
+			repos, _ := a.db.GetUserStarRepos()
+			return a.convertUserStarReposToModels(repos), nil
+		}
 		a.refreshMutex.Unlock()
-		// 返回缓存数据
-		repos, _ := a.db.GetUserStarRepos()
-		return a.convertUserStarReposToModels(repos), nil
 	}
-	a.refreshMutex.Unlock()
 
-	// 执行刷新
 	repos := a.refreshUserStarRepoInternal()
 
-	// 更新计时器
 	a.refreshMutex.Lock()
 	a.lastRefresh = time.Now()
 	a.refreshMutex.Unlock()
