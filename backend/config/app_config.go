@@ -11,8 +11,8 @@ import (
 
 // AppConfig 应用配置
 type AppConfig struct {
-	GitHub     GitHubConfig `toml:"github"`
-	Auth       AuthConfig   `toml:"auth"`
+	GitHub      GitHubConfig      `toml:"github"`
+	Auth        AuthConfig        `toml:"auth"`
 	Preferences PreferencesConfig `toml:"preferences"`
 }
 
@@ -35,6 +35,10 @@ type AuthConfig struct {
 type PreferencesConfig struct {
 	// LoginMethod 登录方式: "oauth" (方式1，需要ClientSecret) 或 "device" (方式2，无需ClientSecret)
 	LoginMethod string `toml:"login_method"`
+	// RefreshInterval 刷新间隔，单位：小时
+	RefreshInterval float64 `toml:"refresh_interval"`
+	// GitHubCloneDir GitHub 仓库克隆目录
+	GitHubCloneDir string `toml:"github_clone_dir"`
 }
 
 // Config 配置服务
@@ -79,6 +83,12 @@ func (c *Config) Load(sharedDir string) error {
 
 	// 如果文件不存在，创建默认配置
 	if _, err := os.Stat(c.path); os.IsNotExist(err) {
+		// 获取用户主目录用于设置默认克隆路径
+		homeDir, err := os.UserHomeDir()
+		if err != nil {
+			homeDir = ""
+		}
+
 		// 创建默认配置
 		c.config = &AppConfig{
 			GitHub: GitHubConfig{
@@ -87,7 +97,9 @@ func (c *Config) Load(sharedDir string) error {
 			},
 			Auth: AuthConfig{},
 			Preferences: PreferencesConfig{
-				LoginMethod: LoginMethodDevice, // 默认使用方式2
+				LoginMethod:     LoginMethodDevice, // 默认使用方式2
+				RefreshInterval: 0.5,               // 默认 0.5 小时（30分钟）
+				GitHubCloneDir:  filepath.Join(homeDir, "github"),
 			},
 		}
 		return c.Save()
@@ -107,6 +119,19 @@ func (c *Config) Load(sharedDir string) error {
 	// 如果登录方式为空，设置默认值
 	if config.Preferences.LoginMethod == "" {
 		config.Preferences.LoginMethod = LoginMethodDevice
+	}
+
+	// 如果刷新间隔为空或无效，设置默认值
+	if config.Preferences.RefreshInterval <= 0 {
+		config.Preferences.RefreshInterval = 0.5 // 默认 0.5 小时
+	}
+
+	// 如果克隆目录为空，设置默认值
+	if config.Preferences.GitHubCloneDir == "" {
+		homeDir, err := os.UserHomeDir()
+		if err == nil {
+			config.Preferences.GitHubCloneDir = filepath.Join(homeDir, "github")
+		}
 	}
 
 	c.config = &config
@@ -222,5 +247,54 @@ func (c *Config) SetLoginMethod(method string) error {
 	c.mu.Lock()
 	c.config.Preferences.LoginMethod = method
 	c.mu.Unlock()
+	return c.Save()
+}
+
+// GetRefreshInterval 获取刷新间隔（小时）
+func (c *Config) GetRefreshInterval() float64 {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.config.Preferences.RefreshInterval
+}
+
+// SetRefreshInterval 设置刷新间隔（小时）
+func (c *Config) SetRefreshInterval(interval float64) error {
+	c.mu.Lock()
+	c.config.Preferences.RefreshInterval = interval
+	c.mu.Unlock()
+	return c.Save()
+}
+
+// GetGitHubCloneDir 获取 GitHub 克隆目录
+func (c *Config) GetGitHubCloneDir() string {
+	c.mu.RLock()
+	defer c.mu.RUnlock()
+	return c.config.Preferences.GitHubCloneDir
+}
+
+// SetGitHubCloneDir 设置 GitHub 克隆目录
+func (c *Config) SetGitHubCloneDir(dir string) error {
+	c.mu.Lock()
+	c.config.Preferences.GitHubCloneDir = dir
+	c.mu.Unlock()
+	return c.Save()
+}
+
+// UpdatePreferences 批量更新偏好设置（原子操作）
+func (c *Config) UpdatePreferences(pref PreferencesConfig) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	// 只更新非空字段
+	if pref.LoginMethod != "" {
+		c.config.Preferences.LoginMethod = pref.LoginMethod
+	}
+	if pref.RefreshInterval > 0 {
+		c.config.Preferences.RefreshInterval = pref.RefreshInterval
+	}
+	if pref.GitHubCloneDir != "" {
+		c.config.Preferences.GitHubCloneDir = pref.GitHubCloneDir
+	}
+
 	return c.Save()
 }
