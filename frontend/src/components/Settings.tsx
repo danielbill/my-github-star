@@ -6,20 +6,16 @@ import {
   Text,
   Title,
   Stack,
-  Flex,
-  ActionIcon,
   Paper,
 } from '@mantine/core';
-import { IconFolder, IconArrowLeft } from '@tabler/icons-react';
+import { IconFolder } from '@tabler/icons-react';
 import {
   GetSettings,
   UpdateSettings,
   OpenDirectoryDialog,
 } from '../../wailsjs/go/backend/App';
 
-interface SettingsProps {
-  onNavigate?: (path: string) => void;
-}
+interface SettingsProps {}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return (
@@ -29,9 +25,9 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
   );
 }
 
-const sliderValues = [1, 2, 8, 24];
+const sliderValues = [1, 2, 4, 8];
 
-export function Settings({ onNavigate }: SettingsProps) {
+export function Settings({}: SettingsProps) {
   const [refreshInterval, setRefreshInterval] = useState<number>(1);
   const [sliderPos, setSliderPos] = useState<number>(0);
   const [cloneDirectory, setCloneDirectory] = useState<string>('');
@@ -120,30 +116,6 @@ export function Settings({ onNavigate }: SettingsProps) {
 
   return (
     <div style={{ maxWidth: 600, margin: '0 auto' }}>
-      <Flex align="center" gap="md" mb="xl" mt="md">
-        {onNavigate && (
-          <ActionIcon
-            variant="subtle"
-            size="md"
-            radius="sm"
-            onClick={handleBack}
-            styles={{
-              root: {
-                backgroundColor: 'transparent',
-                color: '#6a7a90',
-                '&:hover': {
-                  backgroundColor: 'transparent',
-                  color: '#ffffff',
-                },
-              },
-            }}
-          >
-            <IconArrowLeft size={20} />
-          </ActionIcon>
-        )}
-
-      </Flex>
-
       <Stack gap="xl">
         <Paper
           p="xl"
@@ -161,8 +133,8 @@ export function Settings({ onNavigate }: SettingsProps) {
             marks={[
               { value: 0, label: '1小时' },
               { value: 1, label: '2小时' },
-              { value: 2, label: '8小时' },
-              { value: 3, label: '24小时' },
+              { value: 2, label: '4小时' },
+              { value: 3, label: '8小时' },
             ]}
             restrictToMarks
             value={sliderPos}

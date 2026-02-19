@@ -209,7 +209,7 @@ function AppContent() {
              error={error}
              onNavigate={handleNavigate}
            >
-             <Settings />
+             <Settings onNavigate={handleNavigate} />
            </MainLayout>
          }
        />
